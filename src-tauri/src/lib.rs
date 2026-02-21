@@ -123,7 +123,14 @@ async fn get_video_info(url: String) -> Result<VideoInfo, String> {
         return Err("yt-dlp not installed".to_string());
     }
 
-    let output = std::process::Command::new(&yt_dlp_path)
+    let mut cmd = std::process::Command::new(&yt_dlp_path);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let output = cmd
         .arg("-j")
         .arg("--no-playlist")
         .arg(&url)
@@ -234,6 +241,12 @@ async fn download_video(
     );
 
     let mut cmd = std::process::Command::new(&yt_dlp_path);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    
     cmd.arg("--ffmpeg-location")
         .arg(&ffmpeg_path)
         .arg("-f")
