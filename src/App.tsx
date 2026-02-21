@@ -180,9 +180,9 @@ function Onboarding({ onFinish, lang, setLang }: {
   const allInstalled = installed["yt-dlp"] && installed["ffmpeg"];
 
   const labels: Record<Language, { welcome_title: string; welcome_sub: string; next: string; skip: string; lang_title: string; dep_title: string; dep_sub: string; install_all: string; finish_title: string; finish_sub: string; done: string; installing: string }> = {
-    pt: { welcome_title: "Bem-vindo ao MeTool!", welcome_sub: "Baixe vídeos de YouTube, Instagram, TikTok e mais de 1.000 sites — direto do seu desktop.", next: "Próximo", skip: "Pular", lang_title: "Escolha seu idioma", dep_title: "Instalar dependências", dep_sub: "O MeTool usa yt-dlp e ffmpeg para baixar e processar vídeos. Instale agora ou depois.", install_all: "Instalar tudo", finish_title: "Tudo pronto!", finish_sub: "Cole uma URL e baixe seu primeiro vídeo. O app fica na bandeja do sistema.", done: "Começar", installing: "Instalando..." },
-    en: { welcome_title: "Welcome to MeTool!", welcome_sub: "Download videos from YouTube, Instagram, TikTok and 1,000+ sites — right from your desktop.", next: "Next", skip: "Skip", lang_title: "Choose your language", dep_title: "Install dependencies", dep_sub: "MeTool uses yt-dlp and ffmpeg to download and process videos. Install now or later.", install_all: "Install all", finish_title: "All set!", finish_sub: "Paste a URL and download your first video. The app lives in the system tray.", done: "Get started", installing: "Installing..." },
-    es: { welcome_title: "¡Bienvenido a MeTool!", welcome_sub: "Descarga videos de YouTube, Instagram, TikTok y más de 1.000 sitios — desde tu escritorio.", next: "Siguiente", skip: "Omitir", lang_title: "Elige tu idioma", dep_title: "Instalar dependencias", dep_sub: "MeTool usa yt-dlp y ffmpeg para descargar y procesar videos. Instala ahora o después.", install_all: "Instalar todo", finish_title: "¡Todo listo!", finish_sub: "Pega una URL y descarga tu primer video. La app vive en la bandeja del sistema.", done: "Empezar", installing: "Instalando..." },
+    pt: { welcome_title: "Bem-vindo ao Mevideo!", welcome_sub: "Baixe vídeos de YouTube, Instagram, TikTok e mais de 1.000 sites — direto do seu desktop.", next: "Próximo", skip: "Pular", lang_title: "Escolha seu idioma", dep_title: "Instalar dependências", dep_sub: "O Mevideo usa yt-dlp e ffmpeg para baixar e processar vídeos. Instale agora ou depois.", install_all: "Instalar tudo", finish_title: "Tudo pronto!", finish_sub: "Cole uma URL e baixe seu primeiro vídeo. O app fica na bandeja do sistema.", done: "Começar", installing: "Instalando..." },
+    en: { welcome_title: "Welcome to Mevideo!", welcome_sub: "Download videos from YouTube, Instagram, TikTok and 1,000+ sites — right from your desktop.", next: "Next", skip: "Skip", lang_title: "Choose your language", dep_title: "Install dependencies", dep_sub: "Mevideo uses yt-dlp and ffmpeg to download and process videos. Install now or later.", install_all: "Install all", finish_title: "All set!", finish_sub: "Paste a URL and download your first video. The app lives in the system tray.", done: "Get started", installing: "Installing..." },
+    es: { welcome_title: "¡Bienvenido a Mevideo!", welcome_sub: "Descarga videos de YouTube, Instagram, TikTok y más de 1.000 sitios — desde tu escritorio.", next: "Siguiente", skip: "Omitir", lang_title: "Elige tu idioma", dep_title: "Instalar dependencias", dep_sub: "Mevideo usa yt-dlp y ffmpeg para descargar y procesar videos. Instala ahora o después.", install_all: "Instalar todo", finish_title: "¡Todo listo!", finish_sub: "Pega una URL y descarga tu primer video. La app vive en la bandeja del sistema.", done: "Empezar", installing: "Instalando..." },
   };
   const l = labels[lang];
 
@@ -342,7 +342,7 @@ function App() {
   const t = i18n[lang];
 
   const [status, setStatus] = useState<string>(i18n.pt.ready);
-  const [logs, setLogs] = useState<string[]>(["MeTool Initialized..."]);
+  const [logs, setLogs] = useState<string[]>(["Mevideo Initialized..."]);
   const [view, setView] = useState<"home" | "config" | "history">("home");
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState("");

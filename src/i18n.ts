@@ -2,7 +2,7 @@ type Language = 'pt' | 'en' | 'es';
 
 export const i18n = {
   pt: {
-    title: "MeTool",
+    title: "Mevideo",
     home_subtitle: "Desktop Client",
     config_subtitle: "Configurações",
     select_action: "Selecione uma ação",
@@ -34,7 +34,7 @@ export const i18n = {
     ffmpeg_extracted: "FFmpeg extraído e configurado!"
   },
   en: {
-    title: "MeTool",
+    title: "Mevideo",
     home_subtitle: "Desktop Client",
     config_subtitle: "Settings",
     select_action: "Select an action",
@@ -66,7 +66,7 @@ export const i18n = {
     ffmpeg_extracted: "FFmpeg extracted and configured!"
   },
   es: {
-    title: "MeTool",
+    title: "Mevideo",
     home_subtitle: "Cliente de Escritorio",
     config_subtitle: "Configuración",
     select_action: "Seleccione una acción",

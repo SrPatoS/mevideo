@@ -10,7 +10,7 @@ use tokio::io::AsyncWriteExt;
 use directories::ProjectDirs;
 
 pub fn get_bin_dir() -> PathBuf {
-    let proj_dirs = ProjectDirs::from("com", "metool", "app").unwrap();
+    let proj_dirs = ProjectDirs::from("com", "mevideo", "app").unwrap();
     let bin_dir = proj_dirs.data_dir().join("bin");
     if !bin_dir.exists() {
         fs::create_dir_all(&bin_dir).unwrap();
