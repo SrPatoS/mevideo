@@ -1,0 +1,13 @@
+    Checking app v0.1.0 (F:\my-repos\metool\desktop\src-tauri)
+warning: variable does not need to be mutable
+  --> src\binaries.rs:85:21
+   |
+85 |                 let mut outpath = bin_dir.join("ffmpeg.exe");
+   |                     ----^^^^^^^
+   |                     |
+   |                     help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `app` (lib) generated 1 warning (run `cargo fix --lib -p app` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.86s

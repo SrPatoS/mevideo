@@ -2,6 +2,139 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { i18n, Language } from "./i18n";
 
+interface FormatOption {
+  format_id: string;
+  resolution: string;
+  ext: string;
+  filesize?: number;
+}
+
+function FormatSelect({
+  formats,
+  value,
+  onChange,
+}: {
+  formats: FormatOption[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = formats.find((f) => f.format_id === value);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const fmt = (f: FormatOption) => {
+    const size = f.filesize ? (f.filesize / 1024 / 1024).toFixed(1) + " MB" : "?";
+    return `${f.resolution} · ${f.ext.toUpperCase()} · ${size}`;
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative", flex: 1 }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: "10px",
+          padding: "8px 12px",
+          color: "white",
+          fontSize: "0.8rem",
+          cursor: "pointer",
+          gap: "8px",
+          transition: "border-color 0.2s",
+          borderColor: open ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.1)",
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selected ? fmt(selected) : "Selecionar..."}
+        </span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          style={{
+            flexShrink: 0,
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+            opacity: 0.5,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 6px)",
+            left: 0,
+            right: 0,
+            background: "rgba(15,15,20,0.97)",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "12px",
+            maxHeight: "220px",
+            overflowY: "auto",
+            zIndex: 50,
+            boxShadow: "0 -8px 32px rgba(0,0,0,0.5)",
+          }}
+          className="custom-scroll"
+        >
+          {formats.map((f, i) => {
+            const isSelected = f.format_id === value;
+            return (
+              <button
+                key={f.format_id}
+                onClick={() => { onChange(f.format_id); setOpen(false); }}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "9px 12px",
+                  background: isSelected ? "rgba(99,102,241,0.15)" : "transparent",
+                  border: "none",
+                  borderBottom: i < formats.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                  borderRadius: i === 0 ? "12px 12px 0 0" : i === formats.length - 1 ? "0 0 12px 12px" : "0",
+                  color: isSelected ? "#818cf8" : "rgba(255,255,255,0.8)",
+                  fontSize: "0.78rem",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  gap: "8px",
+                }}
+              >
+                <span style={{ fontWeight: isSelected ? 600 : 400 }}>{f.resolution}</span>
+                <span style={{ opacity: 0.45, fontSize: "0.72rem", display: "flex", gap: "6px" }}>
+                  <span>{f.ext.toUpperCase()}</span>
+                  <span>·</span>
+                  <span>{f.filesize ? (f.filesize / 1024 / 1024).toFixed(1) + " MB" : "?"}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [lang, setLang] = useState<Language>("pt");
   const t = i18n[lang];
@@ -10,6 +143,10 @@ function App() {
   const [logs, setLogs] = useState<string[]>(["MeTool Initialized..."]);
   const [view, setView] = useState<"home" | "config">("home");
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoInfo, setVideoInfo] = useState<any>(null);
+  const [selectedFormat, setSelectedFormat] = useState<string>("");
+  const [downloadPath, setDownloadPath] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [binaries, setBinaries] = useState<{ name: string; exists: boolean }[]>([
     { name: "yt-dlp", exists: false },
@@ -68,6 +205,52 @@ function App() {
     }
   };
 
+  const fetchVideoInfo = async () => {
+    if (!videoUrl) return;
+    setIsLoading("fetching");
+    setStatus(t.fetching_info);
+    try {
+      const info = await invoke("get_video_info", { url: videoUrl });
+      setVideoInfo(info);
+      const best = (info as any).formats[0]?.format_id || "";
+      setSelectedFormat(best);
+      setStatus(t.ready);
+    } catch (e) {
+      setStatus(`${t.error}: ${e}`);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleVideoDownload = async () => {
+    if (!videoUrl || !selectedFormat) return;
+
+    const missingDeps = binaries.filter(b => !b.exists);
+    if (missingDeps.length > 0) {
+      setView("config");
+      setStatus(t.error);
+      return;
+    }
+
+    setIsLoading("video");
+    setStatus(t.processing);
+    try {
+      await invoke("download_video", { 
+        url: videoUrl, 
+        formatId: selectedFormat,
+        customPath: downloadPath 
+      });
+      setStatus(t.finished);
+      setVideoUrl("");
+      setVideoInfo(null);
+    } catch (e) {
+      console.error(e);
+      setStatus(`${t.error}: ${e}`);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
   const hideWindow = async () => {
     try {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
@@ -106,6 +289,17 @@ function App() {
     }
   };
 
+  const selectDownloadPath = async () => {
+    try {
+      const result = await invoke<string | null>("pick_folder");
+      if (result) {
+        setDownloadPath(result);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="glass">
       <header style={{ marginBottom: "20px", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -127,17 +321,82 @@ function App() {
       </header>
 
       {view === "home" ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", opacity: 0.5 }}>
-          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: "20px" }}>
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <p>{t.select_action}</p>
-          <button onClick={() => setView("config")} style={{ marginTop: "10px", fontSize: "0.8rem" }}>
-            {t.manage_binaries}
-          </button>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px", paddingTop: "10px", overflowY: "auto" }} className="custom-scroll">
+          <div className="input-group">
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input 
+                type="text" 
+                className="input-field" 
+                style={{ flex: 1 }}
+                placeholder={t.video_url_placeholder}
+                value={videoUrl}
+                onChange={(e) => { setVideoUrl(e.target.value); setVideoInfo(null); }}
+              />
+              <button 
+                onClick={fetchVideoInfo} 
+                disabled={!videoUrl || isLoading !== null}
+                style={{ borderRadius: "12px", padding: "0 15px", background: "rgba(255,255,255,0.05)" }}
+              >
+                {isLoading === "fetching" ? <div className="spinner" /> : "🔍"}
+              </button>
+            </div>
+
+            {videoInfo && (
+              <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "12px", padding: "15px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <p style={{ margin: "0 0 12px 0", fontWeight: "600", fontSize: "0.9rem" }}>{videoInfo.title}</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <span style={{ fontSize: "0.75rem", opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.quality}</span>
+                    <FormatSelect
+                      formats={videoInfo.formats}
+                      value={selectedFormat}
+                      onChange={setSelectedFormat}
+                    />
+                  </div>
+                  
+                  <button 
+                    className="download-btn" 
+                    disabled={isLoading !== null}
+                    onClick={handleVideoDownload}
+                    style={{ marginTop: "10px" }}
+                  >
+                    {isLoading === "video" ? <div className="spinner" /> : (
+                      <>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        {t.download_video}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!binaries.every(b => b.exists) && (
+            <div style={{ padding: "12px", background: "rgba(248, 113, 113, 0.1)", borderRadius: "10px", border: "1px solid rgba(248, 113, 113, 0.2)" }}>
+              <p style={{ fontSize: "0.75rem", margin: 0, color: "#f87171" }}>
+                Dependências faltando. 
+                <span onClick={() => setView("config")} style={{ textDecoration: "underline", marginLeft: "5px", cursor: "pointer" }}>
+                  Resolver
+                </span>
+              </p>
+            </div>
+          )}
         </div>
       ) : (
-        <div style={{ textAlign: "left", flex: 1, display: "flex", flexDirection: "column", gap: "15px", overflow: "hidden" }}>
+        <div style={{ textAlign: "left", flex: 1, display: "flex", flexDirection: "column", gap: "15px", overflowY: "auto", paddingRight: "2px" }} className="custom-scroll">
+          <section>
+            <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, marginBottom: "10px" }}>{t.download_path}</h2>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", background: "rgba(255,255,255,0.02)", padding: "10px", borderRadius: "10px" }}>
+              <span style={{ fontSize: "0.75rem", opacity: 0.6, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {downloadPath || "Padrão (Downloads)"}
+              </span>
+              <button onClick={selectDownloadPath} style={{ fontSize: "0.7rem", padding: "4px 8px" }}>
+                {t.select_folder}
+              </button>
+            </div>
+          </section>
+
           <section>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
               <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, margin: 0 }}>{t.language}</h2>
@@ -199,12 +458,12 @@ function App() {
             </div>
           </section>
 
-          <section style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <section style={{ display: "flex", flexDirection: "column" }}>
             <h2 style={{ fontSize: "0.8rem", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5 }}>{t.output_console}</h2>
             <div 
               ref={scrollRef}
               style={{ 
-                flex: 1, 
+                height: "140px",
                 background: "#000", 
                 borderRadius: "8px", 
                 padding: "12px", 

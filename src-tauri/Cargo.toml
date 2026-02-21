@@ -32,3 +32,4 @@ tempfile = "3"
 sevenz-rust = "0.6" # ffmpeg windows releases often come in 7z
 directories = "5"
 window-vibrancy = "0.5"
+tauri-plugin-dialog = "2.0"
