@@ -32,7 +32,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Instalar dependências do Frontend
         run: npm install
@@ -45,10 +45,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v0.0.${{ github.run_number }} # Cria uma tag sequencial exclusiva a cada push
+          tagName: v1.0.${{ github.run_number }} # Cria uma tag sequencial exclusiva a cada push
           releaseName: 'Build Automática da Main #${{ github.run_number }}'
           releaseBody: |
-            ## 🚀 Nova Build Automática do MeTool
+            ## 🚀 Nova Build Automática do Mevideo
             
             **Patch Notes:**
             - Essa é uma build gerada automaticamente após um novo push na branch `main`.
