@@ -173,8 +173,20 @@ function Onboarding({ onFinish, lang, setLang }: {
   };
 
   const installAll = async () => {
-    await installDep("yt-dlp");
-    await installDep("ffmpeg");
+    setInstallError(null);
+    try {
+      setInstalling("yt-dlp");
+      await invoke("download_binary", { name: "yt-dlp", lang });
+      setInstalled(prev => ({ ...prev, "yt-dlp": true }));
+
+      setInstalling("ffmpeg");
+      await invoke("download_binary", { name: "ffmpeg", lang });
+      setInstalled(prev => ({ ...prev, "ffmpeg": true }));
+    } catch (e) {
+      setInstallError(`Falha na instalação: ${e}`);
+    } finally {
+      setInstalling(null);
+    }
   };
 
   const allInstalled = installed["yt-dlp"] && installed["ffmpeg"];
@@ -895,6 +907,7 @@ function App() {
         onFinish={() => {
           localStorage.setItem("metool-onboarding-done", "1");
           setShowOnboarding(false);
+          checkBinaries();
         }}
       />
     )}
