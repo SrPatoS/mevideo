@@ -51,12 +51,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: 'Build Automática da Main #${{ github.run_number }}'
+          name: 'Release #${{ github.run_number }}'
           body: |
             ## Build Automática do Mevideo
             
             **Patch Notes:**
-            - Essa é uma build gerada automaticamente após um novo push na branch `main`.
             - Commit: `${{ github.sha }}`
             
             > *Para instalar, faça o download do arquivo correspondente ao seu sistema operacional abaixo (`.exe` ou `.msi` para Windows, e `.AppImage` ou `.deb` para Linux).*
