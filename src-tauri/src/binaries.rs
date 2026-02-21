@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 use std::fs;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use reqwest;
 use futures_util::StreamExt;
 use tokio::fs::File;
@@ -82,7 +85,7 @@ pub async fn download_ffmpeg() -> Result<(), String> {
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             if file.name().ends_with("ffmpeg.exe") {
-                let mut outpath = bin_dir.join("ffmpeg.exe");
+                let outpath = bin_dir.join("ffmpeg.exe");
                 let mut outfile = std::fs::File::create(&outpath).map_err(|e| e.to_string())?;
                 std::io::copy(&mut file, &mut outfile).map_err(|e| e.to_string())?;
                 break;
