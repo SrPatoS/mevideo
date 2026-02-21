@@ -47,15 +47,21 @@ jobs:
         with:
           args: ${{ matrix.args }}
           
+      - name: Buscar Versão do App
+        id: version
+        shell: bash
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
       - name: Criar e Enviar para Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: 'Release #${{ github.run_number }}'
+          tag_name: v${{ env.VERSION }}
+          name: 'Mevideo v${{ env.VERSION }}'
           body: |
             ## Build Automática do Mevideo
             
             **Patch Notes:**
+            - Nova build gerada automaticamente para a versão `${{ env.VERSION }}`.
             - Commit: `${{ github.sha }}`
             
             > *Para instalar, faça o download do arquivo correspondente ao seu sistema operacional abaixo (`.exe` ou `.msi` para Windows, e `.AppImage` ou `.deb` para Linux).*
