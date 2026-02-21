@@ -1,14 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
+/* ── Design tokens ── */
 :root {
+  --purple-900: #08070b;
+  --purple-800: #0b0a0f;
+  --purple-700: #100e16;
+  --purple-600: #15131d;
+  --purple-accent: #6366f1;
+  --purple-light: #818cf8;
+  --purple-mid: #a855f7;
+  --pink:        #f472b6;
+  --surface-1:   rgba(99, 102, 241, 0.03);
+  --surface-2:   rgba(99, 102, 241, 0.02);
+  --border:      rgba(139, 92, 246, 0.08);
+  --border-soft: rgba(139, 92, 246, 0.04);
+
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(235, 228, 255, 0.92);
   background-color: transparent;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -34,44 +46,15 @@ body {
   flex-direction: column;
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #111;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-button:hover {
-  border-color: #444;
-  background-color: #222;
-}
-
-button:active {
-  transform: translateY(1px);
-}
-
-button:focus,
-button:focus-visible {
-  outline: 2px solid #555;
-}
-
+/* ── Base glass container ── */
 .glass {
-  background: rgba(10, 10, 10, 0.5); /* Semi-transparent for Mica */
-  backdrop-filter: blur(10px);
+  background: linear-gradient(
+    160deg,
+    rgba(10, 8, 14, 0.90) 0%,
+    rgba(6, 5, 8, 0.95) 50%,
+    rgba(8, 6, 12, 0.92) 100%
+  );
+  backdrop-filter: blur(24px);
   border: none;
   border-radius: 0;
   padding: 24px;
@@ -81,6 +64,7 @@ button:focus-visible {
   flex-direction: column;
 }
 
+/* ── Typography ── */
 .gradient-text {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
@@ -92,9 +76,39 @@ button:focus-visible {
   line-height: 1;
 }
 
+/* ── Buttons (base) ── */
+button {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--surface-1);
+  color: rgba(220, 210, 255, 0.9);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  background-color: rgba(99, 102, 241, 0.12);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus,
+button:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.4);
+  outline-offset: 1px;
+}
+
+/* ── Control buttons (window chrome) ── */
 .control-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   width: 28px;
   height: 28px;
@@ -102,28 +116,31 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(180, 160, 255, 0.6);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .control-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(99, 102, 241, 0.18);
+  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.25);
   transform: none;
 }
 
 .control-btn.close:hover {
   background: #ef4444;
+  border-color: #ef4444;
   color: white;
 }
 
+/* ── Spinner ── */
 .spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(196, 181, 253, 0.25);
   border-radius: 50%;
-  border-top-color: white;
+  border-top-color: #c4b5fd;
   animation: spin 0.8s linear infinite;
 }
 
@@ -131,23 +148,22 @@ button:focus-visible {
   to { transform: rotate(360deg); }
 }
 
+/* ── Scrollbar ── */
 .custom-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
-
 .custom-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(139, 92, 246, 0.2);
   border-radius: 10px;
 }
-
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(139, 92, 246, 0.4);
 }
 
+/* ── Input ── */
 .input-group {
   width: 100%;
   display: flex;
@@ -156,22 +172,27 @@ button:focus-visible {
 }
 
 .input-field {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 18px;
-  color: white;
+  color: rgba(235, 228, 255, 0.92);
   font-size: 0.95rem;
   outline: none;
   transition: all 0.2s;
 }
 
-.input-field:focus {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(99, 102, 241, 0.5);
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+.input-field::placeholder {
+  color: rgba(160, 140, 220, 0.4);
 }
 
+.input-field:focus {
+  background: rgba(99, 102, 241, 0.09);
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 0 18px rgba(99, 102, 241, 0.12);
+}
+
+/* ── Download button ── */
 .download-btn {
   background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   border: none;
@@ -186,11 +207,12 @@ button:focus-visible {
   justify-content: center;
   gap: 10px;
   transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
 }
 
 .download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 12px 28px -4px rgba(99, 102, 241, 0.5);
 }
 
 .download-btn:active:not(:disabled) {
@@ -198,16 +220,16 @@ button:focus-visible {
 }
 
 .download-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
-  filter: grayscale(1);
+  filter: grayscale(0.5);
 }
 
-/* Progress bar */
+/* ── Progress bar ── */
 .progress-bar-track {
   width: 100%;
   height: 5px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(99, 102, 241, 0.1);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -217,7 +239,7 @@ button:focus-visible {
   border-radius: 99px;
   background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 10px rgba(99,102,241,0.5);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
 }
 
 .progress-bar-fill.indeterminate {

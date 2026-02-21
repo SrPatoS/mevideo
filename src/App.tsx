@@ -147,6 +147,196 @@ function FormatSelect({
   );
 }
 
+function Onboarding({ onFinish, lang, setLang }: {
+  onFinish: () => void;
+  lang: Language;
+  setLang: (l: Language) => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [installing, setInstalling] = useState<string | null>(null);
+  const [installed, setInstalled] = useState<Record<string, boolean>>({});
+  const [installError, setInstallError] = useState<string | null>(null);
+
+  const TOTAL_STEPS = 4;
+
+  const installDep = async (name: string) => {
+    setInstalling(name);
+    setInstallError(null);
+    try {
+      await invoke("download_binary", { name, lang });
+      setInstalled(prev => ({ ...prev, [name]: true }));
+    } catch (e) {
+      setInstallError(`Falha ao instalar ${name}: ${e}`);
+    } finally {
+      setInstalling(null);
+    }
+  };
+
+  const installAll = async () => {
+    await installDep("yt-dlp");
+    await installDep("ffmpeg");
+  };
+
+  const allInstalled = installed["yt-dlp"] && installed["ffmpeg"];
+
+  const labels: Record<Language, { welcome_title: string; welcome_sub: string; next: string; skip: string; lang_title: string; dep_title: string; dep_sub: string; install_all: string; finish_title: string; finish_sub: string; done: string; installing: string }> = {
+    pt: { welcome_title: "Bem-vindo ao MeTool!", welcome_sub: "Baixe vídeos de YouTube, Instagram, TikTok e mais de 1.000 sites — direto do seu desktop.", next: "Próximo", skip: "Pular", lang_title: "Escolha seu idioma", dep_title: "Instalar dependências", dep_sub: "O MeTool usa yt-dlp e ffmpeg para baixar e processar vídeos. Instale agora ou depois.", install_all: "Instalar tudo", finish_title: "Tudo pronto!", finish_sub: "Cole uma URL e baixe seu primeiro vídeo. O app fica na bandeja do sistema.", done: "Começar", installing: "Instalando..." },
+    en: { welcome_title: "Welcome to MeTool!", welcome_sub: "Download videos from YouTube, Instagram, TikTok and 1,000+ sites — right from your desktop.", next: "Next", skip: "Skip", lang_title: "Choose your language", dep_title: "Install dependencies", dep_sub: "MeTool uses yt-dlp and ffmpeg to download and process videos. Install now or later.", install_all: "Install all", finish_title: "All set!", finish_sub: "Paste a URL and download your first video. The app lives in the system tray.", done: "Get started", installing: "Installing..." },
+    es: { welcome_title: "¡Bienvenido a MeTool!", welcome_sub: "Descarga videos de YouTube, Instagram, TikTok y más de 1.000 sitios — desde tu escritorio.", next: "Siguiente", skip: "Omitir", lang_title: "Elige tu idioma", dep_title: "Instalar dependencias", dep_sub: "MeTool usa yt-dlp y ffmpeg para descargar y procesar videos. Instala ahora o después.", install_all: "Instalar todo", finish_title: "¡Todo listo!", finish_sub: "Pega una URL y descarga tu primer video. La app vive en la bandeja del sistema.", done: "Empezar", installing: "Instalando..." },
+  };
+  const l = labels[lang];
+
+  const steps = [
+    // Step 0 — Welcome
+    <div key="welcome" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", padding: "10px 0" }}>
+      <div style={{ width: "72px", height: "72px", borderRadius: "22px", background: "linear-gradient(135deg, #6366f1, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 40px rgba(99,102,241,0.4)" }}>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <div>
+        <h2 style={{ margin: "0 0 8px", fontSize: "1.4rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, background: "linear-gradient(135deg, #818cf8, #c084fc, #f472b6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{l.welcome_title}</h2>
+        <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.6, lineHeight: 1.6, maxWidth: "260px" }}>{l.welcome_sub}</p>
+      </div>
+      <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+        {(["pt", "en", "es"] as Language[]).map(lg => (
+          <button key={lg} onClick={() => setLang(lg)} style={{ padding: "4px 10px", fontSize: "0.7rem", background: lang === lg ? "rgba(99,102,241,0.2)" : "transparent", borderColor: lang === lg ? "#6366f1" : "rgba(255,255,255,0.1)" }}>
+            {lg.toUpperCase()}
+          </button>
+        ))}
+      </div>
+    </div>,
+
+    // Step 1 — Language (now just confirms and moves on, already selected above)
+    <div key="lang" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: "2rem", marginBottom: "8px" }}>🌐</div>
+        <h2 style={{ margin: "0 0 6px", fontSize: "1.1rem", fontWeight: 700 }}>{l.lang_title}</h2>
+        <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.5 }}>Você pode mudar isso depois nas configurações.</p>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {([["pt", "🇧🇷", "Português"], ["en", "🇺🇸", "English"], ["es", "🇪🇸", "Español"]] as [Language, string, string][]).map(([lg, flag, name]) => (
+          <button key={lg} onClick={() => setLang(lg)} style={{ padding: "12px 16px", textAlign: "left", display: "flex", alignItems: "center", gap: "12px", fontSize: "0.9rem", background: lang === lg ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.03)", borderColor: lang === lg ? "#6366f1" : "rgba(255,255,255,0.08)", borderRadius: "12px", fontWeight: lang === lg ? 600 : 400 }}>
+            <span style={{ fontSize: "1.2rem" }}>{flag}</span>
+            <span>{name}</span>
+            {lang === lg && <span style={{ marginLeft: "auto", color: "#818cf8" }}>✓</span>}
+          </button>
+        ))}
+      </div>
+    </div>,
+
+    // Step 2 — Dependencies
+    <div key="deps" style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: "2rem", marginBottom: "8px" }}>⚙️</div>
+        <h2 style={{ margin: "0 0 6px", fontSize: "1.1rem", fontWeight: 700 }}>{l.dep_title}</h2>
+        <p style={{ margin: 0, fontSize: "0.78rem", opacity: 0.5 }}>{l.dep_sub}</p>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {[{ name: "yt-dlp", desc: "Motor de download de vídeos" }, { name: "ffmpeg", desc: "Processamento de mídia" }].map(({ name, desc }) => (
+          <div key={name} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: installed[name] ? "#4ade80" : "rgba(255,255,255,0.15)", boxShadow: installed[name] ? "0 0 8px #4ade80" : "none", flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{name}</div>
+              <div style={{ fontSize: "0.7rem", opacity: 0.4 }}>{desc}</div>
+            </div>
+            {installing === name ? (
+              <div className="spinner" />
+            ) : installed[name] ? (
+              <span style={{ color: "#4ade80", fontSize: "0.8rem" }}>✓</span>
+            ) : (
+              <button onClick={() => installDep(name)} disabled={installing !== null} style={{ fontSize: "0.7rem", padding: "3px 10px" }}>Instalar</button>
+            )}
+          </div>
+        ))}
+      </div>
+      {installError && <p style={{ margin: 0, fontSize: "0.75rem", color: "#f87171", textAlign: "center" }}>{installError}</p>}
+      {!allInstalled && (
+        <button onClick={installAll} disabled={installing !== null} className="download-btn" style={{ padding: "10px", fontSize: "0.85rem" }}>
+          {installing ? <><div className="spinner" />{l.installing}</> : l.install_all}
+        </button>
+      )}
+    </div>,
+
+    // Step 3 — Done
+    <div key="done" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", padding: "10px 0" }}>
+      <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(74,222,128,0.1)", border: "2px solid rgba(74,222,128,0.4)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 30px rgba(74,222,128,0.2)" }}>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div>
+        <h2 style={{ margin: "0 0 8px", fontSize: "1.4rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, color: "#4ade80" }}>{l.finish_title}</h2>
+        <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.6, lineHeight: 1.6, maxWidth: "260px" }}>{l.finish_sub}</p>
+      </div>
+    </div>,
+  ];
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(5, 4, 8, 0.92)",
+      backdropFilter: "blur(20px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <div style={{
+        width: "320px",
+        background: "rgba(12, 10, 16, 0.96)",
+        border: "1px solid rgba(139, 92, 246, 0.10)",
+        borderRadius: "20px",
+        padding: "28px 24px 22px",
+        display: "flex", flexDirection: "column", gap: "24px",
+        boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1)",
+      }}>
+        {/* Step dots */}
+        <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+            <div key={i} style={{
+              width: i === step ? "24px" : "6px",
+              height: "6px",
+              borderRadius: "99px",
+              background: i === step ? "#6366f1" : i < step ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.12)",
+              transition: "all 0.3s",
+            }} />
+          ))}
+        </div>
+
+        {/* Step content */}
+        <div style={{ minHeight: "220px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          {steps[step]}
+        </div>
+
+        {/* Navigation */}
+        <div style={{ display: "flex", gap: "10px" }}>
+          {step < TOTAL_STEPS - 1 ? (
+            <>
+              {step === 2 && !allInstalled && (
+                <button onClick={() => setStep(s => s + 1)} style={{ flex: 1, fontSize: "0.8rem", opacity: 0.5, padding: "10px" }}>
+                  {l.skip}
+                </button>
+              )}
+              <button
+                onClick={() => setStep(s => s + 1)}
+                disabled={step === 2 && installing !== null}
+                className={step === 2 && allInstalled ? "download-btn" : ""}
+                style={{ flex: 1, padding: "10px", fontSize: "0.88rem", ...(step !== 2 || allInstalled ? {} : {}) }}
+              >
+                {step === 2 && allInstalled ? "Continuar ✓" : l.next}
+              </button>
+            </>
+          ) : (
+            <button onClick={onFinish} className="download-btn" style={{ flex: 1, padding: "12px", fontSize: "0.9rem" }}>
+              {l.done} →
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [lang, setLang] = useState<Language>("pt");
   const t = i18n[lang];
@@ -161,6 +351,9 @@ function App() {
   const [downloadPath, setDownloadPath] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [appVersion, setAppVersion] = useState<string>("");
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(
+    () => !localStorage.getItem("metool-onboarding-done")
+  );
   const [history, setHistory] = useState<DownloadEntry[]>(() => {
     try {
       const saved = localStorage.getItem("metool-history");
@@ -360,6 +553,7 @@ function App() {
   };
 
   return (
+    <>
     <div className="glass">
       <header style={{ marginBottom: "20px", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div onClick={() => setView("home")} style={{ cursor: "pointer" }}>
@@ -598,14 +792,14 @@ function App() {
               ref={scrollRef}
               style={{ 
                 height: "140px",
-                background: "#000", 
+                background: "rgba(6, 5, 8, 0.7)", 
                 borderRadius: "8px", 
                 padding: "12px", 
                 fontFamily: "monospace", 
                 fontSize: "0.75rem", 
-                color: "#aaa",
+                color: "rgba(235, 228, 255, 0.7)",
                 overflowY: "auto",
-                border: "1px solid rgba(255,255,255,0.05)",
+                border: "1px solid var(--border-soft)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "4px"
@@ -613,7 +807,7 @@ function App() {
               className="custom-scroll"
             >
               {logs.map((log, i) => (
-                <div key={i} style={{ borderLeft: "2px solid #333", paddingLeft: "8px" }}>
+                <div key={i} style={{ borderLeft: "2px solid rgba(139, 92, 246, 0.3)", paddingLeft: "8px" }}>
                   {log}
                 </div>
               ))}
@@ -693,6 +887,18 @@ function App() {
         </div>
       </footer>
     </div>
+
+    {showOnboarding && (
+      <Onboarding
+        lang={lang}
+        setLang={setLang}
+        onFinish={() => {
+          localStorage.setItem("metool-onboarding-done", "1");
+          setShowOnboarding(false);
+        }}
+      />
+    )}
+    </>
   );
 }
 
