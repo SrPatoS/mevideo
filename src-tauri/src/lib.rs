@@ -105,6 +105,7 @@ struct FormatInfo {
     format_id: String,
     ext: String,
     resolution: String,
+    height: u64,
     filesize: Option<u64>,
     vcodec: String,
 }
@@ -143,19 +144,31 @@ async fn get_video_info(url: String) -> Result<VideoInfo, String> {
     if let Some(formats_array) = json["formats"].as_array() {
         for f in formats_array {
             let vcodec = f["vcodec"].as_str().unwrap_or("none");
-            let resolution = f["resolution"].as_str().unwrap_or("original");
+            if vcodec == "none" { continue; }
 
-            if vcodec != "none" {
-                formats.push(FormatInfo {
-                    format_id: f["format_id"].as_str().unwrap_or("").to_string(),
-                    ext: f["ext"].as_str().unwrap_or("").to_string(),
-                    resolution: resolution.to_string(),
-                    filesize: f["filesize"].as_u64().or_else(|| f["filesize_approx"].as_u64()),
-                    vcodec: vcodec.to_string(),
-                });
-            }
+            let resolution = f["resolution"].as_str().unwrap_or("?").to_string();
+            let height = f["height"].as_u64().unwrap_or(0);
+
+            formats.push(FormatInfo {
+                format_id: f["format_id"].as_str().unwrap_or("").to_string(),
+                ext: f["ext"].as_str().unwrap_or("").to_string(),
+                resolution,
+                height,
+                filesize: f["filesize"].as_u64().or_else(|| f["filesize_approx"].as_u64()),
+                vcodec: vcodec.to_string(),
+            });
         }
     }
+
+    // Sort: highest resolution first, mp4 before others at same height
+    formats.sort_by(|a, b| {
+        b.height.cmp(&a.height)
+            .then_with(|| {
+                let a_mp4 = if a.ext == "mp4" { 0 } else { 1 };
+                let b_mp4 = if b.ext == "mp4" { 0 } else { 1 };
+                a_mp4.cmp(&b_mp4)
+            })
+    });
 
     Ok(VideoInfo { title, thumbnail, formats })
 }
@@ -165,8 +178,10 @@ async fn download_video(
     app: tauri::AppHandle,
     url: String,
     format_id: String,
+    format_ext: String,
+    format_height: u64,
     custom_path: Option<String>,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let bin_dir = binaries::get_bin_dir();
     let yt_dlp_path = if cfg!(target_os = "windows") {
         bin_dir.join("yt-dlp.exe")
@@ -191,16 +206,40 @@ async fn download_video(
             .map_err(|e| e.to_string())?
     };
 
+    // Build a robust format string using quality-based selection (always respected by yt-dlp)
+    // with the original format_id as fallback.
+    let video_sel = if format_height > 0 {
+        format!("bestvideo[height={}][ext={}]", format_height, format_ext)
+    } else {
+        format_id.clone()
+    };
+    let audio_sel = if format_ext == "mp4" {
+        "bestaudio[ext=m4a]/bestaudio"
+    } else if format_ext == "webm" {
+        "bestaudio[ext=webm]/bestaudio"
+    } else {
+        "bestaudio"
+    };
+    // e.g. "bestvideo[height=720][ext=mp4]+bestaudio[ext=m4a]/bestaudio/137+bestaudio[ext=m4a]/bestaudio/137+bestaudio"
+    let format_str = format!(
+        "{video}+{audio}/{fid}+{audio}/{fid}+bestaudio",
+        video = video_sel,
+        audio = audio_sel,
+        fid = format_id
+    );
+
     let _ = app.emit(
         "download-log",
-        format!("Iniciando download: {} [formato: {}]", url, format_id),
+        format!("Baixando {}p {} — seletor: {}", format_height, format_ext.to_uppercase(), video_sel),
     );
 
     let mut cmd = std::process::Command::new(&yt_dlp_path);
     cmd.arg("--ffmpeg-location")
         .arg(&ffmpeg_path)
         .arg("-f")
-        .arg(format!("{}+bestaudio/best", format_id))
+        .arg(&format_str)
+        .arg("--merge-output-format")
+        .arg(&format_ext)
         .arg("-o")
         .arg(format!("{}/%(title)s.%(ext)s", dest_path.to_string_lossy()))
         .arg(&url)
@@ -221,7 +260,7 @@ async fn download_video(
     let status = child.wait().map_err(|e| e.to_string())?;
     if status.success() {
         let _ = app.emit("download-log", "✅ Download concluído!".to_string());
-        Ok(())
+        Ok(dest_path.to_string_lossy().to_string())
     } else {
         Err("Processo do yt-dlp falhou".to_string())
     }
@@ -236,6 +275,32 @@ async fn pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     });
     let folder = rx.await.map_err(|e| e.to_string())?;
     Ok(folder.map(|f| f.to_string()))
+}
+
+#[tauri::command]
+fn open_path(path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -301,7 +366,8 @@ pub fn run() {
             open_bin_dir,
             download_video,
             get_video_info,
-            pick_folder
+            pick_folder,
+            open_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

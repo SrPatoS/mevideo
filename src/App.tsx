@@ -2,10 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { i18n, Language } from "./i18n";
 
+interface DownloadEntry {
+  id: string;
+  title: string;
+  url: string;
+  resolution: string;
+  ext: string;
+  path: string;
+  date: string;
+  filesize?: number;
+}
+
 interface FormatOption {
   format_id: string;
   resolution: string;
   ext: string;
+  height: number;
   filesize?: number;
 }
 
@@ -141,12 +153,18 @@ function App() {
 
   const [status, setStatus] = useState<string>(i18n.pt.ready);
   const [logs, setLogs] = useState<string[]>(["MeTool Initialized..."]);
-  const [view, setView] = useState<"home" | "config">("home");
+  const [view, setView] = useState<"home" | "config" | "history">("home");
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoInfo, setVideoInfo] = useState<any>(null);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
   const [downloadPath, setDownloadPath] = useState<string | null>(null);
+  const [history, setHistory] = useState<DownloadEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem("metool-history");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const [binaries, setBinaries] = useState<{ name: string; exists: boolean }[]>([
     { name: "yt-dlp", exists: false },
@@ -212,8 +230,11 @@ function App() {
     try {
       const info = await invoke("get_video_info", { url: videoUrl });
       setVideoInfo(info);
-      const best = (info as any).formats[0]?.format_id || "";
-      setSelectedFormat(best);
+      // Formats arrive sorted: highest res first, mp4 before others at same height
+      // Pick the best mp4, fallback to whatever is first
+      const formats = (info as any).formats as FormatOption[];
+      const bestMp4 = formats.find(f => f.ext === "mp4");
+      setSelectedFormat((bestMp4 ?? formats[0])?.format_id || "");
       setStatus(t.ready);
     } catch (e) {
       setStatus(`${t.error}: ${e}`);
@@ -235,14 +256,37 @@ function App() {
     setIsLoading("video");
     setStatus(t.processing);
     try {
-      await invoke("download_video", { 
+      const selFmt = (videoInfo?.formats as FormatOption[])?.find(f => f.format_id === selectedFormat);
+      const savedPath = await invoke<string>("download_video", { 
         url: videoUrl, 
         formatId: selectedFormat,
+        formatExt: selFmt?.ext || "mp4",
+        formatHeight: selFmt?.height ?? 0,
         customPath: downloadPath 
       });
+      // Save to history
+      const entry: DownloadEntry = {
+        id: Date.now().toString(),
+        title: videoInfo?.title || videoUrl,
+        url: videoUrl,
+        resolution: selFmt?.resolution || "",
+        ext: selFmt?.ext || "",
+        filesize: selFmt?.filesize,
+        path: savedPath,
+        date: new Date().toISOString(),
+      };
+      setHistory(prev => {
+        const updated = [entry, ...prev].slice(0, 50);
+        localStorage.setItem("metool-history", JSON.stringify(updated));
+        return updated;
+      });
+
       setStatus(t.finished);
       setVideoUrl("");
       setVideoInfo(null);
+
+      // Open folder
+      invoke("open_path", { path: savedPath }).catch(console.error);
     } catch (e) {
       console.error(e);
       setStatus(`${t.error}: ${e}`);
@@ -305,9 +349,33 @@ function App() {
       <header style={{ marginBottom: "20px", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div onClick={() => setView("home")} style={{ cursor: "pointer" }}>
           <h1 className="gradient-text" style={{ fontSize: "1.8rem", margin: "0" }}>{t.title}</h1>
-          <p style={{ opacity: 0.6, fontSize: "0.8rem" }}>{view === "home" ? t.home_subtitle : t.config_subtitle}</p>
+          <p style={{ opacity: 0.6, fontSize: "0.8rem" }}>
+            {view === "home" ? t.home_subtitle : view === "config" ? t.config_subtitle : "Histórico"}
+          </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
+          {/* History button */}
+          <button
+            onClick={() => setView(view === "history" ? "home" : "history")}
+            className="control-btn"
+            title="Histórico"
+            style={{ position: "relative" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {history.length > 0 && (
+              <span style={{
+                position: "absolute", top: "-4px", right: "-4px",
+                background: "#6366f1", borderRadius: "50%",
+                width: "14px", height: "14px",
+                fontSize: "8px", display: "flex", alignItems: "center", justifyContent: "center",
+                fontWeight: 700, lineHeight: 1,
+              }}>{Math.min(history.length, 99)}</span>
+            )}
+          </button>
+          {/* Config button */}
           <button onClick={() => setView(view === "home" ? "config" : "home")} className="control-btn" title={t.config_subtitle}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
@@ -383,7 +451,7 @@ function App() {
             </div>
           )}
         </div>
-      ) : (
+      ) : view === "config" ? (
         <div style={{ textAlign: "left", flex: 1, display: "flex", flexDirection: "column", gap: "15px", overflowY: "auto", paddingRight: "2px" }} className="custom-scroll">
           <section>
             <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, marginBottom: "10px" }}>{t.download_path}</h2>
@@ -485,6 +553,67 @@ function App() {
               ))}
             </div>
           </section>
+        </div>
+      ) : (
+        // History view
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto" }} className="custom-scroll">
+          {history.length === 0 ? (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", opacity: 0.35, gap: "8px", paddingTop: "40px" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <p style={{ fontSize: "0.8rem", margin: 0 }}>Nenhum download ainda</p>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                <span style={{ fontSize: "0.72rem", opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{history.length} download{history.length !== 1 ? "s" : ""}</span>
+                <button
+                  onClick={() => {
+                    if (confirm("Limpar histórico?")) {
+                      setHistory([]);
+                      localStorage.removeItem("metool-history");
+                    }
+                  }}
+                  style={{ fontSize: "0.65rem", padding: "2px 8px", opacity: 0.5 }}
+                >Limpar</button>
+              </div>
+              {history.map(entry => (
+                <div key={entry.id} style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "10px",
+                  padding: "10px 12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
+                    <span style={{ fontSize: "0.8rem", fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {entry.title}
+                    </span>
+                    <button
+                      onClick={() => invoke("open_path", { path: entry.path }).catch(console.error)}
+                      title="Abrir pasta"
+                      style={{ padding: "2px 6px", fontSize: "0.65rem", flexShrink: 0, display: "flex", alignItems: "center", gap: "4px" }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Abrir
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", fontSize: "0.7rem", opacity: 0.45 }}>
+                    <span>{entry.resolution}</span>
+                    {entry.ext && <span>· {entry.ext.toUpperCase()}</span>}
+                    {entry.filesize && <span>· {(entry.filesize / 1024 / 1024).toFixed(1)} MB</span>}
+                    <span style={{ marginLeft: "auto" }}>{new Date(entry.date).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
 
