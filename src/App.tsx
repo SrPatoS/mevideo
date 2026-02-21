@@ -159,6 +159,8 @@ function App() {
   const [videoInfo, setVideoInfo] = useState<any>(null);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
   const [downloadPath, setDownloadPath] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("");
   const [history, setHistory] = useState<DownloadEntry[]>(() => {
     try {
       const saved = localStorage.getItem("metool-history");
@@ -173,12 +175,22 @@ function App() {
 
   useEffect(() => {
     checkBinaries();
-    
+    // Fetch app version
+    import("@tauri-apps/api/app").then(({ getVersion }) =>
+      getVersion().then(setAppVersion).catch(() => {})
+    );
+
     const setupListener = async () => {
       try {
         const { listen } = await import("@tauri-apps/api/event");
         const unlisten = await listen<string>("download-log", (event) => {
-          setLogs(prev => [...prev.slice(-49), `[${new Date().toLocaleTimeString()}] ${event.payload}`]);
+          const payload = event.payload;
+          // Parse yt-dlp progress: "[download]  45.3% of 128.5MiB at 2.5MiB/s"
+          const pct = payload.match(/\[download\]\s+(\d+(?:\.\d+)?)%/);
+          if (pct) {
+            setDownloadProgress(parseFloat(pct[1]));
+          }
+          setLogs(prev => [...prev.slice(-49), `[${new Date().toLocaleTimeString()}] ${payload}`]);
         });
         return unlisten;
       } catch (e) {
@@ -282,6 +294,7 @@ function App() {
       });
 
       setStatus(t.finished);
+      setDownloadProgress(100);
       setVideoUrl("");
       setVideoInfo(null);
 
@@ -292,6 +305,8 @@ function App() {
       setStatus(`${t.error}: ${e}`);
     } finally {
       setIsLoading(null);
+      // Reset progress after a short delay so user sees 100%
+      setTimeout(() => setDownloadProgress(null), 1500);
     }
   };
 
@@ -403,10 +418,45 @@ function App() {
               <button 
                 onClick={fetchVideoInfo} 
                 disabled={!videoUrl || isLoading !== null}
-                style={{ borderRadius: "12px", padding: "0 15px", background: "rgba(255,255,255,0.05)" }}
+                style={{ borderRadius: "12px", padding: "0 15px", background: "rgba(255,255,255,0.05)", minWidth: "46px", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                {isLoading === "fetching" ? <div className="spinner" /> : "🔍"}
+                {isLoading === "fetching" ? <div className="spinner" /> : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                )}
               </button>
+            </div>
+
+            {/* Supported sites strip */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "0.58rem", opacity: 0.22, textTransform: "uppercase", letterSpacing: "0.8px", whiteSpace: "nowrap" }}>suportado</span>
+              <div style={{ display: "flex", gap: "7px", alignItems: "center" }}>
+                {([
+                  { title: "YouTube", color: "#FF0000", d: "M23.5 6.19a3.02 3.02 0 0 0-2.13-2.14C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.08 0 12 0 12s0 3.92.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.5 20.5 12 20.5 12 20.5s7.5 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.92 24 12 24 12s0-3.92-.5-5.81zM9.75 15.5v-7l6.5 3.5-6.5 3.5z" },
+                  { title: "X / Twitter", color: "#e7e9ea", d: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" },
+                  { title: "Instagram", color: "#E1306C", d: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z" },
+                  { title: "TikTok", color: "#ffffff", d: "M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.3 6.3 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z" },
+                  { title: "Twitch", color: "#9146FF", d: "M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" },
+                  { title: "SoundCloud", color: "#FF5500", d: "M1.175 12.225c-.077 0-.148.03-.2.083a.29.29 0 0 0-.083.225l.245 2.203-.245 2.137a.29.29 0 0 0 .083.225.29.29 0 0 0 .2.083c.154 0 .283-.13.283-.283l.278-2.16-.278-2.25a.286.286 0 0 0-.283-.26zm16.937-2.377a3.55 3.55 0 0 0-2.508 1.037 4.4 4.4 0 0 0-4.404-4.032 4.4 4.4 0 0 0-1.612.31v8.724h8.524A2.586 2.586 0 0 0 20.698 13.4a2.59 2.59 0 0 0-2.586-2.586v.034z" },
+                  { title: "Vimeo", color: "#1AB7EA", d: "M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.37-8.29 6.37-1.409 0-2.578-1.294-3.553-3.881L5.322 11.4C4.603 8.816 3.834 7.522 3.01 7.522c-.179 0-.806.378-1.881 1.132L0 7.197c1.185-1.044 2.351-2.084 3.501-3.128C5.08 2.701 6.266 1.984 7.055 1.91c1.867-.18 3.016 1.1 3.447 3.838.465 2.953.789 4.789.971 5.507.539 2.45 1.131 3.674 1.776 3.674.502 0 1.256-.796 2.265-2.385 1.004-1.589 1.54-2.797 1.612-3.628.144-1.371-.395-2.061-1.614-2.061-.574 0-1.167.121-1.777.391 1.186-3.868 3.434-5.757 6.762-5.637 2.473.06 3.628 1.664 3.48 4.807z" },
+                  { title: "Facebook", color: "#1877F2", d: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" },
+                ] as { title: string; color: string; d: string }[]).map(({ title, color, d }) => (
+                  <span
+                    key={title}
+                    title={title}
+                    style={{ width: "13px", height: "13px", color, opacity: 0.28, display: "flex", flexShrink: 0, transition: "opacity 0.2s", cursor: "default" }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "0.28")}
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: "100%", height: "100%" }}>
+                      <path d={d} />
+                    </svg>
+                  </span>
+                ))}
+                <span style={{ fontSize: "0.58rem", opacity: 0.18, marginLeft: "1px" }}>+1000</span>
+              </div>
             </div>
 
             {videoInfo && (
@@ -435,6 +485,22 @@ function App() {
                       </>
                     )}
                   </button>
+
+                  {/* Progress bar — visible during and briefly after download */}
+                  {downloadProgress !== null && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "2px" }}>
+                      <div className="progress-bar-track">
+                        <div
+                          className={`progress-bar-fill${downloadProgress < 1 ? " indeterminate" : ""}`}
+                          style={{ width: `${Math.max(downloadProgress, 2)}%` }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.68rem", opacity: 0.45 }}>
+                        <span>{downloadProgress >= 100 ? "✓ Concluído" : "Baixando..."}</span>
+                        <span>{downloadProgress < 100 ? `${downloadProgress.toFixed(1)}%` : ""}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -617,10 +683,13 @@ function App() {
         </div>
       )}
 
-      <footer style={{ marginTop: "15px", padding: "10px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
-        <div style={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "8px", opacity: 0.7 }}>
-          <span style={{ color: status.includes(t.error) ? "#f87171" : "#6366f1" }}>●</span>
-          <span>{status}</span>
+      <footer style={{ marginTop: "15px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
+        <div style={{ fontSize: "0.72rem", display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ color: status.includes(t.error) ? "#f87171" : "#6366f1", opacity: 0.9 }}>●</span>
+          <span style={{ opacity: 0.65, flex: 1 }}>{status}</span>
+          {appVersion && (
+            <span style={{ opacity: 0.2, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.02em", fontSize: "0.65rem" }}>v{appVersion}</span>
+          )}
         </div>
       </footer>
     </div>
