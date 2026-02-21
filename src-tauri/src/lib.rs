@@ -1,9 +1,29 @@
 mod binaries;
 use tauri::{Manager, Emitter};
 
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 #[tauri::command]
 fn get_bin_path() -> String {
     binaries::get_bin_dir().to_string_lossy().to_string()
+}
+
+#[tauri::command]
+fn open_bin_dir() {
+    let path = binaries::get_bin_dir();
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer")
+            .arg(path)
+            .spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open")
+            .arg(path)
+            .spawn();
+    }
 }
 
 #[tauri::command]
@@ -12,35 +32,48 @@ fn check_binary(name: String) -> bool {
 }
 
 #[tauri::command]
-async fn download_binary(app: tauri::AppHandle, name: String) -> Result<(), String> {
-    let _ = app.emit("download-log", format!("Iniciando processo para: {}", name));
+async fn download_binary(app: tauri::AppHandle, name: String, lang: String) -> Result<(), String> {
+    let msg_start = if lang == "en" { "Starting process for:" } else if lang == "es" { "Iniciando proceso para:" } else { "Iniciando processo para:" };
+    let msg_ffmpeg = if lang == "en" { "Downloading release for your OS..." } else if lang == "es" { "Descargando release para su OS..." } else { "Baixando release para seu OS..." };
+    let msg_success = if lang == "en" { "successfully installed!" } else if lang == "es" { "instalado con éxito!" } else { "instalado com sucesso!" };
+    let msg_ffmpeg_success = if lang == "en" { "FFmpeg extracted and configured!" } else if lang == "es" { "¡FFmpeg extraído y configurado!" } else { "FFmpeg extraído e configurado!" };
+
+    let _ = app.emit("download-log", format!("{} {}", msg_start, name));
     
     if name == "yt-dlp" {
-        let url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
+        let url = if cfg!(target_os = "windows") {
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
+        } else {
+            "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+        };
         let _ = app.emit("download-log", format!("URL: {}", url));
         let result = binaries::download_yt_dlp().await;
         match result {
             Ok(_) => {
-                let _ = app.emit("download-log", "yt-dlp instalado com sucesso!".to_string());
+                let _ = app.emit("download-log", format!("yt-dlp {}", msg_success));
                 Ok(())
             },
             Err(e) => {
-                let _ = app.emit("download-log", format!("Erro no yt-dlp: {}", e));
+                let _ = app.emit("download-log", format!("Error: {}", e));
                 Err(e)
             }
         }
     } else if name == "ffmpeg" {
-        let url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
+        let url = if cfg!(target_os = "windows") {
+            "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+        } else {
+            "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+        };
         let _ = app.emit("download-log", format!("URL: {}", url));
-        let _ = app.emit("download-log", "Baixando release essentials do FFmpeg...".to_string());
+        let _ = app.emit("download-log", msg_ffmpeg.to_string());
         let result = binaries::download_ffmpeg().await;
         match result {
             Ok(_) => {
-                let _ = app.emit("download-log", "FFmpeg extraído e configurado!".to_string());
+                let _ = app.emit("download-log", msg_ffmpeg_success.to_string());
                 Ok(())
             },
             Err(e) => {
-                let _ = app.emit("download-log", format!("Erro no FFmpeg: {}", e));
+                let _ = app.emit("download-log", format!("Error: {}", e));
                 Err(e)
             }
         }
@@ -76,10 +109,10 @@ pub fn run() {
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
-                    if let tauri::tray::TrayIconEvent::Click { 
-                        button: tauri::tray::MouseButton::Left, 
+                    if let tauri::tray::TrayIconEvent::Click {
+                        button: tauri::tray::MouseButton::Left,
                         button_state: tauri::tray::MouseButtonState::Up,
-                        .. 
+                        ..
                     } = event {
                         let _ = toggle_window(tray.app_handle());
                     }
@@ -88,7 +121,7 @@ pub fn run() {
         }
 
         if let Some(window) = app.get_webview_window("main") {
-            // Apply Mica effect (Windows 11)
+            // Apply Mica effect (Windows 11 only)
             #[cfg(target_os = "windows")]
             {
                 let _ = window_vibrancy::apply_mica(&window, None);
@@ -106,7 +139,7 @@ pub fn run() {
             _ => {}
         }
     })
-    .invoke_handler(tauri::generate_handler![check_binary, download_binary, get_bin_path])
+    .invoke_handler(tauri::generate_handler![check_binary, download_binary, get_bin_path, open_bin_dir])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

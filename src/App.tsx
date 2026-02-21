@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { i18n, Language } from "./i18n";
 
 function App() {
-  const [status, setStatus] = useState<string>("Pronto");
+  const [lang, setLang] = useState<Language>("pt");
+  const t = i18n[lang];
+
+  const [status, setStatus] = useState<string>(i18n.pt.ready);
   const [logs, setLogs] = useState<string[]>(["MeTool Initialized..."]);
   const [view, setView] = useState<"home" | "config">("home");
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -52,13 +56,13 @@ function App() {
 
   const downloadBinary = async (name: string) => {
     setIsLoading(name);
-    setStatus(`Processando ${name}...`);
+    setStatus(`${t.processing} ${name}...`);
     try {
-      await invoke("download_binary", { name });
-      setStatus(`${name} finalizado.`);
+      await invoke("download_binary", { name, lang });
+      setStatus(`${name} ${t.finished}.`);
       checkBinaries();
     } catch (e) {
-      setStatus(`Erro: ${e}`);
+      setStatus(`${t.error}: ${e}`);
     } finally {
       setIsLoading(null);
     }
@@ -84,9 +88,7 @@ function App() {
 
   const openBinFolder = async () => {
     try {
-      const { Command } = await import("@tauri-apps/plugin-shell");
-      const path = await invoke("get_bin_path") as string;
-      await Command.create("explorer", [path]).execute();
+      await invoke("open_bin_dir");
     } catch (e) {
       console.error("Erro ao abrir pasta:", e);
     }
@@ -108,11 +110,11 @@ function App() {
     <div className="glass">
       <header style={{ marginBottom: "20px", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div onClick={() => setView("home")} style={{ cursor: "pointer" }}>
-          <h1 className="gradient-text" style={{ fontSize: "1.8rem", margin: "0" }}>MeTool</h1>
-          <p style={{ opacity: 0.6, fontSize: "0.8rem" }}>{view === "home" ? "Desktop Client" : "Configurações"}</p>
+          <h1 className="gradient-text" style={{ fontSize: "1.8rem", margin: "0" }}>{t.title}</h1>
+          <p style={{ opacity: 0.6, fontSize: "0.8rem" }}>{view === "home" ? t.home_subtitle : t.config_subtitle}</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          <button onClick={() => setView(view === "home" ? "config" : "home")} className="control-btn" title="Configurações">
+          <button onClick={() => setView(view === "home" ? "config" : "home")} className="control-btn" title={t.config_subtitle}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
           <button onClick={minimizeWindow} className="control-btn" title="Minimizar">
@@ -129,18 +131,36 @@ function App() {
           <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ marginBottom: "20px" }}>
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
           </svg>
-          <p>Selecione uma ação</p>
+          <p>{t.select_action}</p>
           <button onClick={() => setView("config")} style={{ marginTop: "10px", fontSize: "0.8rem" }}>
-            Gerenciar Binários
+            {t.manage_binaries}
           </button>
         </div>
       ) : (
-        <div style={{ textAlign: "left", flex: 1, display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden" }}>
+        <div style={{ textAlign: "left", flex: 1, display: "flex", flexDirection: "column", gap: "15px", overflow: "hidden" }}>
+          <section>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, margin: 0 }}>{t.language}</h2>
+              <div style={{ display: "flex", gap: "5px" }}>
+                {(['pt', 'en', 'es'] as Language[]).map(l => (
+                  <button key={l} onClick={() => setLang(l)} style={{ 
+                    padding: "2px 8px", 
+                    fontSize: "0.7rem", 
+                    background: lang === l ? "rgba(99, 102, 241, 0.2)" : "transparent",
+                    borderColor: lang === l ? "#6366f1" : "rgba(255,255,255,0.1)"
+                  }}>
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
           <section>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, margin: 0 }}>Dependências</h2>
+              <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, margin: 0 }}>{t.dependencies}</h2>
               <button onClick={openBinFolder} style={{ fontSize: "0.7rem", padding: "4px 8px", opacity: 0.7 }}>
-                Abrir Pasta
+                {t.open_folder}
               </button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -163,7 +183,7 @@ function App() {
                       boxShadow: bin.exists ? "0 0 10px #4ade80" : "none"
                     }} />
                     <span style={{ fontWeight: "600", fontSize: "0.9rem" }}>{bin.name}</span>
-                    <button onClick={() => openRepoUrl(bin.name)} style={{ border: "none", background: "none", padding: 0, opacity: 0.3, cursor: "pointer" }} title="Ver Repositório">
+                    <button onClick={() => openRepoUrl(bin.name)} style={{ border: "none", background: "none", padding: 0, opacity: 0.3, cursor: "pointer" }} title={t.repo_tooltip}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                     </button>
                   </div>
@@ -172,7 +192,7 @@ function App() {
                     onClick={() => downloadBinary(bin.name)} 
                     style={{ fontSize: "0.7rem", padding: "4px 10px", display: "flex", alignItems: "center", gap: "6px" }}
                   >
-                    {isLoading === bin.name ? <div className="spinner" /> : (bin.exists ? "Atualizar" : "Instalar")}
+                    {isLoading === bin.name ? <div className="spinner" /> : (bin.exists ? t.update : t.install)}
                   </button>
                 </div>
               ))}
@@ -180,7 +200,7 @@ function App() {
           </section>
 
           <section style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <h2 style={{ fontSize: "0.8rem", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5 }}>Console de Saída</h2>
+            <h2 style={{ fontSize: "0.8rem", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5 }}>{t.output_console}</h2>
             <div 
               ref={scrollRef}
               style={{ 
@@ -211,7 +231,7 @@ function App() {
 
       <footer style={{ marginTop: "15px", padding: "10px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
         <div style={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "8px", opacity: 0.7 }}>
-          <span style={{ color: status.includes("Erro") ? "#f87171" : "#6366f1" }}>●</span>
+          <span style={{ color: status.includes(t.error) ? "#f87171" : "#6366f1" }}>●</span>
           <span>{status}</span>
         </div>
       </footer>
