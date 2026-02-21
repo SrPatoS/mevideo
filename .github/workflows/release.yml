@@ -1,0 +1,65 @@
+name: "Release MeTool App"
+
+on:
+  push:
+    tags:
+      - 'v*' # O workflow será ativado sempre que você enviar uma tag começando por "v", ex: v1.0.0
+
+jobs:
+  release:
+    permissions:
+      contents: write # Permissão obrigatória para a Action criar a Release no GitHub
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest'
+            args: ''
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Baixar o código-fonte (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Instalar dependências de sistema (Linux apenas)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependências do Frontend
+        run: npm install
+
+      - name: Configurar o compilador Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Construir app e criar a Release no GitHub
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'MeTool ${{ github.ref_name }}'
+          releaseBody: |
+            ## 🎉 Nova Atualização do MeTool (${{ github.ref_name }})
+            
+            **Patch Notes:**
+            - Nova versão lançada com melhorias na interface premium (Glassmorphism).
+            - Atualizado o sistema inteligente de mesclagem de vídeo.
+            - Novo onboarding sem necessidade de FFmpeg embutido na release!
+            
+            > *Para instalar, faça o download do arquivo referente ao seu sistema operacional abaixo (`.exe` ou `.msi` para Windows, `.dmg` para macOS e `.AppImage` para Linux).*
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
