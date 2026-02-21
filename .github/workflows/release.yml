@@ -32,7 +32,7 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Instalar dependências do Frontend
         run: npm install
@@ -44,6 +44,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_OPTIONS: "--no-experimental-fetch"
         with:
           tagName: v1.0.${{ github.run_number }} # Cria uma tag sequencial exclusiva a cada push
           releaseName: 'Build Automática da Main #${{ github.run_number }}'
