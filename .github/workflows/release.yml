@@ -2,8 +2,8 @@ name: "Release MeTool App"
 
 on:
   push:
-    tags:
-      - 'v*' # O workflow será ativado sempre que você enviar uma tag começando por "v", ex: v1.0.0
+    branches:
+      - main # O workflow será ativado automaticamente a cada commit/push na branch main
 
 jobs:
   release:
@@ -13,8 +13,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: ''
           - platform: 'ubuntu-22.04'
             args: ''
           - platform: 'windows-latest'
@@ -41,25 +39,22 @@ jobs:
 
       - name: Configurar o compilador Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Construir app e criar a Release no GitHub
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'MeTool ${{ github.ref_name }}'
+          tagName: v0.0.${{ github.run_number }} # Cria uma tag sequencial exclusiva a cada push
+          releaseName: 'Build Automática da Main #${{ github.run_number }}'
           releaseBody: |
-            ## 🎉 Nova Atualização do MeTool (${{ github.ref_name }})
+            ## 🚀 Nova Build Automática do MeTool
             
             **Patch Notes:**
-            - Nova versão lançada com melhorias na interface premium (Glassmorphism).
-            - Atualizado o sistema inteligente de mesclagem de vídeo.
-            - Novo onboarding sem necessidade de FFmpeg embutido na release!
+            - Essa é uma build gerada automaticamente após um novo push na branch `main`.
+            - Commit: `${{ github.sha }}`
             
-            > *Para instalar, faça o download do arquivo referente ao seu sistema operacional abaixo (`.exe` ou `.msi` para Windows, `.dmg` para macOS e `.AppImage` para Linux).*
-          releaseDraft: true
-          prerelease: false
+            > *Para instalar, faça o download do arquivo correspondente ao seu sistema operacional abaixo (`.exe` ou `.msi` para Windows, e `.AppImage` ou `.deb` para Linux).*
+          releaseDraft: false # Cai automaticamente na aba Releases sem precisar de aprovação
+          prerelease: true # Marca como "pre-release" para indicar que é uma build de desenvolvimento
           args: ${{ matrix.args }}
