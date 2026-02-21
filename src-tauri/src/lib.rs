@@ -1,5 +1,10 @@
 mod binaries;
-use tauri::Manager;
+use tauri::{Manager, Emitter};
+
+#[tauri::command]
+fn get_bin_path() -> String {
+    binaries::get_bin_dir().to_string_lossy().to_string()
+}
 
 #[tauri::command]
 fn check_binary(name: String) -> bool {
@@ -7,11 +12,38 @@ fn check_binary(name: String) -> bool {
 }
 
 #[tauri::command]
-async fn download_binary(name: String) -> Result<(), String> {
+async fn download_binary(app: tauri::AppHandle, name: String) -> Result<(), String> {
+    let _ = app.emit("download-log", format!("Iniciando processo para: {}", name));
+    
     if name == "yt-dlp" {
-        binaries::download_yt_dlp().await
+        let url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
+        let _ = app.emit("download-log", format!("URL: {}", url));
+        let result = binaries::download_yt_dlp().await;
+        match result {
+            Ok(_) => {
+                let _ = app.emit("download-log", "yt-dlp instalado com sucesso!".to_string());
+                Ok(())
+            },
+            Err(e) => {
+                let _ = app.emit("download-log", format!("Erro no yt-dlp: {}", e));
+                Err(e)
+            }
+        }
     } else if name == "ffmpeg" {
-        binaries::download_ffmpeg().await
+        let url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip";
+        let _ = app.emit("download-log", format!("URL: {}", url));
+        let _ = app.emit("download-log", "Baixando release essentials do FFmpeg...".to_string());
+        let result = binaries::download_ffmpeg().await;
+        match result {
+            Ok(_) => {
+                let _ = app.emit("download-log", "FFmpeg extraído e configurado!".to_string());
+                Ok(())
+            },
+            Err(e) => {
+                let _ = app.emit("download-log", format!("Erro no FFmpeg: {}", e));
+                Err(e)
+            }
+        }
     } else {
         Err("Binary not supported".to_string())
     }
@@ -74,7 +106,7 @@ pub fn run() {
             _ => {}
         }
     })
-    .invoke_handler(tauri::generate_handler![check_binary, download_binary])
+    .invoke_handler(tauri::generate_handler![check_binary, download_binary, get_bin_path])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
