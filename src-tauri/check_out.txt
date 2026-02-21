@@ -1,0 +1,19 @@
+   Compiling app v0.1.0 (F:\my-repos\metool\desktop\src-tauri)
+warning: unused import: `std::io::copy`
+ --> src\binaries.rs:4:5
+  |
+4 | use std::io::copy;
+  |     ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `BinaryStatus` is never constructed
+  --> src\binaries.rs:12:12
+   |
+12 | pub struct BinaryStatus {
+   |            ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `app` (lib) generated 2 warnings (run `cargo fix --lib -p app` to apply 1 suggestion)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.95s
