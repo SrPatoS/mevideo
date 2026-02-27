@@ -1,13 +1,13 @@
-use std::path::PathBuf;
 use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
 
-use reqwest;
+use directories::ProjectDirs;
 use futures_util::StreamExt;
+use reqwest;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use directories::ProjectDirs;
 
 pub fn get_bin_dir() -> PathBuf {
     let proj_dirs = ProjectDirs::from("com", "mevideo", "app").unwrap();
@@ -29,7 +29,11 @@ pub async fn download_yt_dlp() -> Result<(), String> {
     let bin_dir = get_bin_dir();
     fs::create_dir_all(&bin_dir).map_err(|e| e.to_string())?;
 
-    let file_name = if cfg!(target_os = "windows") { "yt-dlp.exe" } else { "yt-dlp" };
+    let file_name = if cfg!(target_os = "windows") {
+        "yt-dlp.exe"
+    } else {
+        "yt-dlp"
+    };
     let url = if cfg!(target_os = "windows") {
         "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
     } else {
@@ -37,7 +41,9 @@ pub async fn download_yt_dlp() -> Result<(), String> {
     };
 
     let response = reqwest::get(url).await.map_err(|e| e.to_string())?;
-    let mut file = File::create(bin_dir.join(file_name)).await.map_err(|e| e.to_string())?;
+    let mut file = File::create(bin_dir.join(file_name))
+        .await
+        .map_err(|e| e.to_string())?;
 
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
@@ -47,7 +53,9 @@ pub async fn download_yt_dlp() -> Result<(), String> {
 
     #[cfg(unix)]
     {
-        let mut perms = fs::metadata(bin_dir.join(file_name)).map_err(|e| e.to_string())?.permissions();
+        let mut perms = fs::metadata(bin_dir.join(file_name))
+            .map_err(|e| e.to_string())?
+            .permissions();
         perms.set_mode(0o755);
         fs::set_permissions(bin_dir.join(file_name), perms).map_err(|e| e.to_string())?;
     }
@@ -67,7 +75,11 @@ pub async fn download_ffmpeg() -> Result<(), String> {
     };
 
     let response = reqwest::get(url).await.map_err(|e| e.to_string())?;
-    let fname = if cfg!(target_os = "windows") { "ffmpeg.zip" } else { "ffmpeg.tar.xz" };
+    let fname = if cfg!(target_os = "windows") {
+        "ffmpeg.zip"
+    } else {
+        "ffmpeg.tar.xz"
+    };
     let temp_file = bin_dir.join(fname);
     let mut file = File::create(&temp_file).await.map_err(|e| e.to_string())?;
 
@@ -81,7 +93,7 @@ pub async fn download_ffmpeg() -> Result<(), String> {
         // Windows ZIP extraction logic (existing)
         let file = std::fs::File::open(&temp_file).map_err(|e| e.to_string())?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| e.to_string())?;
-        
+
         for i in 0..archive.len() {
             let mut file = archive.by_index(i).map_err(|e| e.to_string())?;
             if file.name().ends_with("ffmpeg.exe") {
@@ -105,9 +117,12 @@ pub async fn download_ffmpeg() -> Result<(), String> {
             .map_err(|e| format!("Failed to extract tar: {}", e))?;
 
         if !output.status.success() {
-            return Err(format!("Tar extraction failed: {}", String::from_utf8_lossy(&output.stderr)));
+            return Err(format!(
+                "Tar extraction failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
         }
-        
+
         // Ensure the binary is in the right place and called just 'ffmpeg'
         // The strip-components might put 'ffmpeg' directly in bin_dir if chosen correctly
     }

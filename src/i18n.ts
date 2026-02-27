@@ -31,7 +31,11 @@ export const i18n = {
     downloading_os: "Baixando release para seu OS...",
     starting_for: "Iniciando processo para:",
     success_install: "instalado com sucesso!",
-    ffmpeg_extracted: "FFmpeg extraído e configurado!"
+    ffmpeg_extracted: "FFmpeg extraído e configurado!",
+    system: "SISTEMA",
+    autostart: "Iniciar com o Sistema",
+    enabled: "Ligado",
+    disabled: "Desligado"
   },
   en: {
     title: "Mevideo",
@@ -63,7 +67,11 @@ export const i18n = {
     downloading_os: "Downloading release for your OS...",
     starting_for: "Starting process for:",
     success_install: "successfully installed!",
-    ffmpeg_extracted: "FFmpeg extracted and configured!"
+    ffmpeg_extracted: "FFmpeg extracted and configured!",
+    system: "SYSTEM",
+    autostart: "Start on Boot",
+    enabled: "On",
+    disabled: "Off"
   },
   es: {
     title: "Mevideo",
@@ -95,7 +103,11 @@ export const i18n = {
     downloading_os: "Descargando release para su OS...",
     starting_for: "Iniciando proceso para:",
     success_install: "instalado con éxito!",
-    ffmpeg_extracted: "¡FFmpeg extraído y configurado!"
+    ffmpeg_extracted: "¡FFmpeg extraído y configurado!",
+    system: "SISTEMA",
+    autostart: "Iniciar con el Sistema",
+    enabled: "Activado",
+    disabled: "Desactivado"
   }
 };
 

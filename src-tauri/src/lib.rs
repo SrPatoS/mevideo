@@ -1,12 +1,15 @@
-use tauri::Manager;
 use tauri::Emitter;
+use tauri::Manager;
 
 mod binaries;
 
 fn position_window_bottom_right(window: &tauri::WebviewWindow) {
     if let Ok(Some(monitor)) = window.primary_monitor() {
         let monitor_size = monitor.size();
-        let win_size = window.outer_size().unwrap_or(tauri::PhysicalSize { width: 380, height: 550 });
+        let win_size = window.outer_size().unwrap_or(tauri::PhysicalSize {
+            width: 380,
+            height: 550,
+        });
         let margin_right: i32 = 12;
         let margin_bottom: i32 = 48;
         let x = (monitor_size.width as i32) - (win_size.width as i32) - margin_right;
@@ -16,7 +19,9 @@ fn position_window_bottom_right(window: &tauri::WebviewWindow) {
 }
 
 fn toggle_window(app: &tauri::AppHandle) -> Result<(), String> {
-    let window = app.get_webview_window("main").ok_or("Janela não encontrada")?;
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Janela não encontrada")?;
     if window.is_visible().unwrap_or(false) {
         window.hide().map_err(|e| e.to_string())?;
     } else {
@@ -37,15 +42,11 @@ fn open_bin_dir() {
     let path = binaries::get_bin_dir();
     #[cfg(target_os = "windows")]
     {
-        let _ = std::process::Command::new("explorer")
-            .arg(path)
-            .spawn();
+        let _ = std::process::Command::new("explorer").arg(path).spawn();
     }
     #[cfg(target_os = "linux")]
     {
-        let _ = std::process::Command::new("xdg-open")
-            .arg(path)
-            .spawn();
+        let _ = std::process::Command::new("xdg-open").arg(path).spawn();
     }
 }
 
@@ -84,8 +85,17 @@ async fn get_binary_version(name: String) -> Result<String, String> {
         let stdout = String::from_utf8_lossy(&output.stdout).to_string();
         let first_line = stdout.lines().next().unwrap_or("Unknown");
         // "ffmpeg version 7.0.1-essentials_build-www.gyan.dev ..." -> "7.0.1"
-        let raw_version = first_line.replace("ffmpeg version ", "").split(' ').next().unwrap_or("Unknown").to_string();
-        let version = raw_version.split('-').next().unwrap_or(&raw_version).to_string();
+        let raw_version = first_line
+            .replace("ffmpeg version ", "")
+            .split(' ')
+            .next()
+            .unwrap_or("Unknown")
+            .to_string();
+        let version = raw_version
+            .split('-')
+            .next()
+            .unwrap_or(&raw_version)
+            .to_string();
         Ok(version)
     } else {
         Err("Unsupported binary".to_string())
@@ -94,10 +104,34 @@ async fn get_binary_version(name: String) -> Result<String, String> {
 
 #[tauri::command]
 async fn download_binary(app: tauri::AppHandle, name: String, lang: String) -> Result<(), String> {
-    let msg_start = if lang == "en" { "Starting process for:" } else if lang == "es" { "Iniciando proceso para:" } else { "Iniciando processo para:" };
-    let msg_ffmpeg = if lang == "en" { "Downloading release for your OS..." } else if lang == "es" { "Descargando release para su OS..." } else { "Baixando release para seu OS..." };
-    let msg_success = if lang == "en" { "successfully installed!" } else if lang == "es" { "instalado con éxito!" } else { "instalado com sucesso!" };
-    let msg_ffmpeg_success = if lang == "en" { "FFmpeg extracted and configured!" } else if lang == "es" { "¡FFmpeg extraído y configurado!" } else { "FFmpeg extraído e configurado!" };
+    let msg_start = if lang == "en" {
+        "Starting process for:"
+    } else if lang == "es" {
+        "Iniciando proceso para:"
+    } else {
+        "Iniciando processo para:"
+    };
+    let msg_ffmpeg = if lang == "en" {
+        "Downloading release for your OS..."
+    } else if lang == "es" {
+        "Descargando release para su OS..."
+    } else {
+        "Baixando release para seu OS..."
+    };
+    let msg_success = if lang == "en" {
+        "successfully installed!"
+    } else if lang == "es" {
+        "instalado con éxito!"
+    } else {
+        "instalado com sucesso!"
+    };
+    let msg_ffmpeg_success = if lang == "en" {
+        "FFmpeg extracted and configured!"
+    } else if lang == "es" {
+        "¡FFmpeg extraído y configurado!"
+    } else {
+        "FFmpeg extraído e configurado!"
+    };
 
     let _ = app.emit("download-log", format!("{} {}", msg_start, name));
 
@@ -189,7 +223,9 @@ async fn get_video_info(url: String) -> Result<VideoInfo, String> {
     if let Some(formats_array) = json["formats"].as_array() {
         for f in formats_array {
             let vcodec = f["vcodec"].as_str().unwrap_or("none");
-            if vcodec == "none" { continue; }
+            if vcodec == "none" {
+                continue;
+            }
 
             let resolution = f["resolution"].as_str().unwrap_or("?").to_string();
             let height = f["height"].as_u64().unwrap_or(0);
@@ -199,7 +235,9 @@ async fn get_video_info(url: String) -> Result<VideoInfo, String> {
                 ext: f["ext"].as_str().unwrap_or("").to_string(),
                 resolution,
                 height,
-                filesize: f["filesize"].as_u64().or_else(|| f["filesize_approx"].as_u64()),
+                filesize: f["filesize"]
+                    .as_u64()
+                    .or_else(|| f["filesize_approx"].as_u64()),
                 vcodec: vcodec.to_string(),
             });
         }
@@ -207,15 +245,18 @@ async fn get_video_info(url: String) -> Result<VideoInfo, String> {
 
     // Sort: highest resolution first, mp4 before others at same height
     formats.sort_by(|a, b| {
-        b.height.cmp(&a.height)
-            .then_with(|| {
-                let a_mp4 = if a.ext == "mp4" { 0 } else { 1 };
-                let b_mp4 = if b.ext == "mp4" { 0 } else { 1 };
-                a_mp4.cmp(&b_mp4)
-            })
+        b.height.cmp(&a.height).then_with(|| {
+            let a_mp4 = if a.ext == "mp4" { 0 } else { 1 };
+            let b_mp4 = if b.ext == "mp4" { 0 } else { 1 };
+            a_mp4.cmp(&b_mp4)
+        })
     });
 
-    Ok(VideoInfo { title, thumbnail, formats })
+    Ok(VideoInfo {
+        title,
+        thumbnail,
+        formats,
+    })
 }
 
 #[tauri::command]
@@ -281,7 +322,12 @@ async fn download_video(
 
     let _ = app.emit(
         "download-log",
-        format!("Baixando {}p {} — seletor: {}", format_height, format_ext.to_uppercase(), video_sel),
+        format!(
+            "Baixando {}p {} — seletor: {}",
+            format_height,
+            format_ext.to_uppercase(),
+            video_sel
+        ),
     );
 
     let mut cmd = std::process::Command::new(&yt_dlp_path);
@@ -290,7 +336,7 @@ async fn download_video(
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x08000000);
     }
-    
+
     cmd.arg("--ffmpeg-location")
         .arg(&ffmpeg_path)
         .arg("-f")
@@ -363,6 +409,7 @@ fn open_path(path: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let _ = toggle_window(app);
         }))
@@ -371,8 +418,7 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let quit_i =
-                tauri::menu::MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
+            let quit_i = tauri::menu::MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
             let show_i =
                 tauri::menu::MenuItem::with_id(app, "show", "Abrir App", true, None::<&str>)?;
             let menu = tauri::menu::Menu::with_items(app, &[&show_i, &quit_i])?;

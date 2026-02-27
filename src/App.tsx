@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { i18n, Language } from "./i18n";
+import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 
 interface DownloadEntry {
   id: string;
@@ -358,9 +359,10 @@ function Onboarding({ onFinish, lang, setLang }: {
 
 function App() {
   const [lang, setLang] = useState<Language>("pt");
-  const t = i18n[lang];
+  const t = i18n[lang] as Record<string, string>;
 
-  const [status, setStatus] = useState<string>(i18n.pt.ready);
+  const [status, setStatus] = useState<string>(t.ready);
+  const [autoStart, setAutoStart] = useState<boolean>(false);
   const [logs, setLogs] = useState<string[]>(["Mevideo Initialized..."]);
   const [view, setView] = useState<"home" | "config" | "history">("home");
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -389,6 +391,7 @@ function App() {
 
   useEffect(() => {
     checkBinaries();
+    isEnabled().then(setAutoStart).catch(console.error);
     // Fetch app version and check for updates
     import("@tauri-apps/api/app").then(({ getVersion }) =>
       getVersion().then((currentVersion) => {
@@ -608,6 +611,20 @@ function App() {
     }
   };
 
+  const toggleAutoStart = async () => {
+    try {
+      if (autoStart) {
+        await disable();
+        setAutoStart(false);
+      } else {
+        await enable();
+        setAutoStart(true);
+      }
+    } catch (e) {
+      console.error("Failed to toggle autostart", e);
+    }
+  };
+
   return (
     <>
     <div className="glass">
@@ -796,6 +813,29 @@ function App() {
                   </button>
                 ))}
               </div>
+            </div>
+          </section>
+
+          <section>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+               <h2 style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5, margin: 0 }}>{t.system}</h2>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)", padding: "10px", borderRadius: "10px", marginBottom: "16px" }}>
+               <span style={{ fontSize: "0.75rem", opacity: 0.8 }}>{t.autostart}</span>
+               <button 
+                  onClick={toggleAutoStart} 
+                  style={{ 
+                    padding: "4px 10px", 
+                    fontSize: "0.7rem", 
+                    borderRadius: "6px", 
+                    background: autoStart ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.05)", 
+                    color: autoStart ? "#4ade80" : "rgba(255,255,255,0.5)",
+                    border: `1px solid ${autoStart ? "rgba(74,222,128,0.3)" : "rgba(255,255,255,0.1)"}`,
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}>
+                 {autoStart ? t.enabled : t.disabled}
+               </button>
             </div>
           </section>
 
