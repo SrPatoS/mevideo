@@ -21,6 +21,13 @@ interface FormatOption {
   filesize?: number;
 }
 
+interface UpdateAsset {
+  os: 'windows' | 'mac' | 'linux';
+  ext: string;
+  url: string;
+  size: number;
+}
+
 function FormatSelect({
   formats,
   value,
@@ -378,6 +385,7 @@ function App() {
     { name: "ffmpeg", exists: false },
   ]);
   const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+  const [updateAssets, setUpdateAssets] = useState<UpdateAsset[]>([]);
 
   useEffect(() => {
     checkBinaries();
@@ -396,6 +404,16 @@ function App() {
                 latestVersion.localeCompare(currentVersion, undefined, { numeric: true, sensitivity: 'base' }) > 0
               ) {
                 setUpdateUrl(data.html_url);
+                const assets = data.assets || [];
+                const parsedAssets: UpdateAsset[] = [];
+                for (const a of assets) {
+                  const name = a.name.toLowerCase();
+                  if (name.endsWith('.exe')) parsedAssets.push({ os: 'windows', ext: '.exe', url: a.browser_download_url, size: a.size });
+                  else if (name.endsWith('.dmg')) parsedAssets.push({ os: 'mac', ext: '.dmg', url: a.browser_download_url, size: a.size });
+                  else if (name.endsWith('.deb')) parsedAssets.push({ os: 'linux', ext: '.deb', url: a.browser_download_url, size: a.size });
+                  else if (name.endsWith('.appimage')) parsedAssets.push({ os: 'linux', ext: 'AppImage', url: a.browser_download_url, size: a.size });
+                }
+                setUpdateAssets(parsedAssets);
               }
             }
           })
@@ -929,24 +947,56 @@ function App() {
       </footer>
       {updateUrl && (
         <div style={{
-          marginTop: "10px",
-          padding: "8px 12px",
-          background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))",
-          borderRadius: "8px",
-          border: "1px solid rgba(168,85,247,0.3)",
+          marginTop: "16px",
+          padding: "16px",
+          background: "rgba(10, 10, 10, 0.8)",
+          backdropFilter: "blur(20px)",
+          borderRadius: "16px",
+          border: "1px solid rgba(139, 92, 246, 0.2)",
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
+          flexDirection: "column",
+          gap: "12px",
+          boxShadow: "0 10px 40px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
         }}>
-          <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#e9d5ff" }}>Nova versão disponível!</span>
-          <button
-            onClick={() => {
-              import("@tauri-apps/plugin-shell").then(({ open }) => open(updateUrl)).catch(console.error);
-            }}
-            style={{ fontSize: "0.7rem", padding: "4px 10px", background: "rgba(168,85,247,0.4)", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
-          >
-            Baixar
-          </button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#e9d5ff", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7", boxShadow: "0 0 12px #a855f7" }} />
+              Nova versão disponível!
+            </span>
+            <button
+              onClick={() => { import("@tauri-apps/plugin-shell").then(({ open }) => open(updateUrl)).catch(console.error); }}
+              style={{ fontSize: "0.7rem", padding: "4px 10px", background: "transparent", color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", cursor: "pointer" }}
+            >
+              Ver no GitHub
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", overflowX: "auto" }} className="custom-scroll">
+            {updateAssets.map((asset, idx) => {
+              const iconObj: Record<string, string> = { windows: "🪟", mac: "🍏", linux: "🐧" };
+              const icon = iconObj[asset.os] || "📦";
+              return (
+                <button
+                  key={idx}
+                  onClick={() => { import("@tauri-apps/plugin-shell").then(({ open }) => open(asset.url)).catch(console.error); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "6px",
+                    fontSize: "0.75rem", padding: "8px 12px",
+                    background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(217, 70, 239, 0.15) 100%)",
+                    border: "1px solid rgba(217, 70, 239, 0.3)",
+                    borderRadius: "10px", cursor: "pointer", color: "white", flex: 1, minWidth: "100px", justifyContent: "center"
+                  }}
+                  title={asset.ext}
+                >
+                  <span style={{ fontSize: "1rem" }}>{icon}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1 }}>
+                    <span style={{ fontWeight: 600 }}>{asset.ext.toUpperCase()}</span>
+                    <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>{(asset.size / 1024 / 1024).toFixed(1)} MB</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

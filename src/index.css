@@ -2,24 +2,23 @@
 
 /* ── Design tokens ── */
 :root {
-  --purple-900: #08070b;
-  --purple-800: #0b0a0f;
-  --purple-700: #100e16;
-  --purple-600: #15131d;
-  --purple-accent: #6366f1;
-  --purple-light: #818cf8;
-  --purple-mid: #a855f7;
-  --pink:        #f472b6;
-  --surface-1:   rgba(99, 102, 241, 0.03);
-  --surface-2:   rgba(99, 102, 241, 0.02);
-  --border:      rgba(139, 92, 246, 0.08);
-  --border-soft: rgba(139, 92, 246, 0.04);
+  --bg-core: #050505;
+  --bg-surface: #0a0a0a;
+  --purple-900: #0f0a1f;
+  --purple-accent: #6d28d9;
+  --purple-light: #a78bfa;
+  --purple-mid: #8b5cf6;
+  --pink:        #ec4899;
+  --surface-1:   rgba(255, 255, 255, 0.04);
+  --surface-2:   rgba(255, 255, 255, 0.02);
+  --border:      rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.04);
 
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
-  color: rgba(235, 228, 255, 0.92);
+  color: #ffffff;
   background-color: transparent;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -46,15 +45,10 @@ body {
   flex-direction: column;
 }
 
-/* ── Base glass container ── */
+/* ── Base container w/ ambient glow ── */
 .glass {
-  background: linear-gradient(
-    160deg,
-    rgba(10, 8, 14, 0.90) 0%,
-    rgba(6, 5, 8, 0.95) 50%,
-    rgba(8, 6, 12, 0.92) 100%
-  );
-  backdrop-filter: blur(24px);
+  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15) 0%, rgba(0, 0, 0, 0) 60%),
+              linear-gradient(180deg, var(--bg-core) 0%, #000000 100%);
   border: none;
   border-radius: 0;
   padding: 24px;
@@ -194,11 +188,11 @@ button:focus-visible {
 
 /* ── Download button ── */
 .download-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  border: none;
+  background: linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 14px;
-  color: white;
+  color: #ffffff;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
@@ -206,13 +200,13 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: all 0.3s;
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px -4px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 12px 28px -4px rgba(139, 92, 246, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .download-btn:active:not(:disabled) {
