@@ -373,16 +373,34 @@ function App() {
     } catch { return []; }
   });
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [binaries, setBinaries] = useState<{ name: string; exists: boolean }[]>([
+  const [binaries, setBinaries] = useState<{ name: string; exists: boolean; version?: string }[]>([
     { name: "yt-dlp", exists: false },
     { name: "ffmpeg", exists: false },
   ]);
+  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
 
   useEffect(() => {
     checkBinaries();
-    // Fetch app version
+    // Fetch app version and check for updates
     import("@tauri-apps/api/app").then(({ getVersion }) =>
-      getVersion().then(setAppVersion).catch(() => {})
+      getVersion().then((currentVersion) => {
+        setAppVersion(currentVersion);
+        fetch("https://api.github.com/repos/SrPatoS/mevideo/releases/latest")
+          .then(res => res.json())
+          .then(data => {
+            if (data.tag_name) {
+              const latestVersion = data.tag_name.replace('v', '');
+              // Safe semantic versioning check (e.g. 1.0.10 > 1.0.2)
+              if (
+                latestVersion !== currentVersion && 
+                latestVersion.localeCompare(currentVersion, undefined, { numeric: true, sensitivity: 'base' }) > 0
+              ) {
+                setUpdateUrl(data.html_url);
+              }
+            }
+          })
+          .catch(() => {});
+      }).catch(() => {})
     );
 
     const setupListener = async () => {
@@ -418,10 +436,18 @@ function App() {
 
   const checkBinaries = async () => {
     const updated = await Promise.all(
-      binaries.map(async (bin) => ({
-        ...bin,
-        exists: await invoke("check_binary", { name: bin.name }) as boolean,
-      }))
+      binaries.map(async (bin) => {
+        const exists = await invoke("check_binary", { name: bin.name }) as boolean;
+        let version = undefined;
+        if (exists) {
+          try { version = await invoke("get_binary_version", { name: bin.name }) as string; } catch {}
+        }
+        return {
+          ...bin,
+          exists,
+          version,
+        };
+      })
     );
     setBinaries(updated);
   };
@@ -781,7 +807,10 @@ function App() {
                       background: bin.exists ? "#4ade80" : "#f87171",
                       boxShadow: bin.exists ? "0 0 10px #4ade80" : "none"
                     }} />
-                    <span style={{ fontWeight: "600", fontSize: "0.9rem" }}>{bin.name}</span>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                      <span style={{ fontWeight: "600", fontSize: "0.9rem" }}>{bin.name}</span>
+                      {bin.version && <span style={{ fontSize: "0.65rem", opacity: 0.5, fontFamily: "monospace" }}>v{bin.version}</span>}
+                    </div>
                     <button onClick={() => openRepoUrl(bin.name)} style={{ border: "none", background: "none", padding: 0, opacity: 0.3, cursor: "pointer" }} title={t.repo_tooltip}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
                     </button>
@@ -898,6 +927,28 @@ function App() {
           )}
         </div>
       </footer>
+      {updateUrl && (
+        <div style={{
+          marginTop: "10px",
+          padding: "8px 12px",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1))",
+          borderRadius: "8px",
+          border: "1px solid rgba(168,85,247,0.3)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}>
+          <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#e9d5ff" }}>Nova versão disponível!</span>
+          <button
+            onClick={() => {
+              import("@tauri-apps/plugin-shell").then(({ open }) => open(updateUrl)).catch(console.error);
+            }}
+            style={{ fontSize: "0.7rem", padding: "4px 10px", background: "rgba(168,85,247,0.4)", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+          >
+            Baixar
+          </button>
+        </div>
+      )}
     </div>
 
     {showOnboarding && (

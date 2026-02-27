@@ -55,6 +55,44 @@ fn check_binary(name: String) -> bool {
 }
 
 #[tauri::command]
+async fn get_binary_version(name: String) -> Result<String, String> {
+    let bin_dir = binaries::get_bin_dir();
+    let bin_path = if cfg!(target_os = "windows") {
+        bin_dir.join(format!("{}.exe", name))
+    } else {
+        bin_dir.join(&name)
+    };
+
+    if !bin_path.exists() {
+        return Err("Not installed".to_string());
+    }
+
+    let mut cmd = std::process::Command::new(&bin_path);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    if name == "yt-dlp" {
+        cmd.arg("--version");
+        let output = cmd.output().map_err(|e| e.to_string())?;
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else if name == "ffmpeg" {
+        cmd.arg("-version");
+        let output = cmd.output().map_err(|e| e.to_string())?;
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        let first_line = stdout.lines().next().unwrap_or("Unknown");
+        // "ffmpeg version 7.0.1-essentials_build-www.gyan.dev ..." -> "7.0.1"
+        let raw_version = first_line.replace("ffmpeg version ", "").split(' ').next().unwrap_or("Unknown").to_string();
+        let version = raw_version.split('-').next().unwrap_or(&raw_version).to_string();
+        Ok(version)
+    } else {
+        Err("Unsupported binary".to_string())
+    }
+}
+
+#[tauri::command]
 async fn download_binary(app: tauri::AppHandle, name: String, lang: String) -> Result<(), String> {
     let msg_start = if lang == "en" { "Starting process for:" } else if lang == "es" { "Iniciando proceso para:" } else { "Iniciando processo para:" };
     let msg_ffmpeg = if lang == "en" { "Downloading release for your OS..." } else if lang == "es" { "Descargando release para su OS..." } else { "Baixando release para seu OS..." };
@@ -220,20 +258,26 @@ async fn download_video(
     } else {
         format_id.clone()
     };
-    let audio_sel = if format_ext == "mp4" {
-        "bestaudio[ext=m4a]/bestaudio"
+
+    let format_str = if format_ext == "mp4" {
+        format!(
+            "{v}+bestaudio[ext=m4a]/{v}+bestaudio/{f}+bestaudio[ext=m4a]/{f}+bestaudio/{v}/{f}/best",
+            v = video_sel,
+            f = format_id
+        )
     } else if format_ext == "webm" {
-        "bestaudio[ext=webm]/bestaudio"
+        format!(
+            "{v}+bestaudio[ext=webm]/{v}+bestaudio/{f}+bestaudio[ext=webm]/{f}+bestaudio/{v}/{f}/best",
+            v = video_sel,
+            f = format_id
+        )
     } else {
-        "bestaudio"
+        format!(
+            "{v}+bestaudio/{f}+bestaudio/{v}/{f}/best",
+            v = video_sel,
+            f = format_id
+        )
     };
-    // e.g. "bestvideo[height=720][ext=mp4]+bestaudio[ext=m4a]/bestaudio/137+bestaudio[ext=m4a]/bestaudio/137+bestaudio"
-    let format_str = format!(
-        "{video}+{audio}/{fid}+{audio}/{fid}+bestaudio",
-        video = video_sel,
-        audio = audio_sel,
-        fid = format_id
-    );
 
     let _ = app.emit(
         "download-log",
@@ -319,6 +363,9 @@ fn open_path(path: String) -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = toggle_window(app);
+        }))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
@@ -374,6 +421,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             check_binary,
+            get_binary_version,
             download_binary,
             get_bin_path,
             open_bin_dir,

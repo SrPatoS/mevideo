@@ -33,3 +33,5 @@ sevenz-rust = "0.6" # ffmpeg windows releases often come in 7z
 directories = "5"
 window-vibrancy = "0.5"
 tauri-plugin-dialog = "2.0"
+tauri-plugin-single-instance = "2.4.0"
+tauri-plugin-updater = "2.10.0"
