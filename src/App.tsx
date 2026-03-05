@@ -75,7 +75,7 @@ function FormatSelect({
           cursor: "pointer",
           gap: "8px",
           transition: "border-color 0.2s",
-          borderColor: open ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.1)",
+          borderColor: open ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.1)",
         }}
       >
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -129,11 +129,11 @@ function FormatSelect({
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "9px 12px",
-                  background: isSelected ? "rgba(99,102,241,0.15)" : "transparent",
+                  background: isSelected ? "rgba(255,255,255,0.15)" : "transparent",
                   border: "none",
                   borderBottom: i < formats.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                   borderRadius: i === 0 ? "12px 12px 0 0" : i === formats.length - 1 ? "0 0 12px 12px" : "0",
-                  color: isSelected ? "#818cf8" : "rgba(255,255,255,0.8)",
+                  color: isSelected ? "#ffffff" : "rgba(255,255,255,0.8)",
                   fontSize: "0.78rem",
                   cursor: "pointer",
                   textAlign: "left",
@@ -209,7 +209,7 @@ function Onboarding({ onFinish, lang, setLang }: {
   const steps = [
     // Step 0 — Welcome
     <div key="welcome" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", padding: "10px 0" }}>
-      <div style={{ width: "72px", height: "72px", borderRadius: "22px", background: "linear-gradient(135deg, #6366f1, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 40px rgba(99,102,241,0.4)" }}>
+      <div style={{ width: "72px", height: "72px", borderRadius: "22px", background: "linear-gradient(135deg, #ffffff, #ffffff)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 40px rgba(255,255,255,0.4)" }}>
         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -217,12 +217,12 @@ function Onboarding({ onFinish, lang, setLang }: {
         </svg>
       </div>
       <div>
-        <h2 style={{ margin: "0 0 8px", fontSize: "1.4rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, background: "linear-gradient(135deg, #818cf8, #c084fc, #f472b6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{l.welcome_title}</h2>
+        <h2 style={{ margin: "0 0 8px", fontSize: "1.4rem", fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, background: "linear-gradient(135deg, #ffffff, #cccccc, #999999)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{l.welcome_title}</h2>
         <p style={{ margin: 0, fontSize: "0.85rem", opacity: 0.6, lineHeight: 1.6, maxWidth: "260px" }}>{l.welcome_sub}</p>
       </div>
       <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
         {(["pt", "en", "es"] as Language[]).map(lg => (
-          <button key={lg} onClick={() => setLang(lg)} style={{ padding: "4px 10px", fontSize: "0.7rem", background: lang === lg ? "rgba(99,102,241,0.2)" : "transparent", borderColor: lang === lg ? "#6366f1" : "rgba(255,255,255,0.1)" }}>
+          <button key={lg} onClick={() => setLang(lg)} style={{ padding: "4px 10px", fontSize: "0.7rem", background: lang === lg ? "rgba(255,255,255,0.2)" : "transparent", borderColor: lang === lg ? "#ffffff" : "rgba(255,255,255,0.1)" }}>
             {lg.toUpperCase()}
           </button>
         ))}
@@ -238,10 +238,10 @@ function Onboarding({ onFinish, lang, setLang }: {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         {([["pt", "🇧🇷", "Português"], ["en", "🇺🇸", "English"], ["es", "🇪🇸", "Español"]] as [Language, string, string][]).map(([lg, flag, name]) => (
-          <button key={lg} onClick={() => setLang(lg)} style={{ padding: "12px 16px", textAlign: "left", display: "flex", alignItems: "center", gap: "12px", fontSize: "0.9rem", background: lang === lg ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.03)", borderColor: lang === lg ? "#6366f1" : "rgba(255,255,255,0.08)", borderRadius: "12px", fontWeight: lang === lg ? 600 : 400 }}>
+          <button key={lg} onClick={() => setLang(lg)} style={{ padding: "12px 16px", textAlign: "left", display: "flex", alignItems: "center", gap: "12px", fontSize: "0.9rem", background: lang === lg ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.03)", borderColor: lang === lg ? "#ffffff" : "rgba(255,255,255,0.08)", borderRadius: "12px", fontWeight: lang === lg ? 600 : 400 }}>
             <span style={{ fontSize: "1.2rem" }}>{flag}</span>
             <span>{name}</span>
-            {lang === lg && <span style={{ marginLeft: "auto", color: "#818cf8" }}>✓</span>}
+            {lang === lg && <span style={{ marginLeft: "auto", color: "#ffffff" }}>✓</span>}
           </button>
         ))}
       </div>
@@ -304,11 +304,11 @@ function Onboarding({ onFinish, lang, setLang }: {
       <div style={{
         width: "320px",
         background: "rgba(12, 10, 16, 0.96)",
-        border: "1px solid rgba(139, 92, 246, 0.10)",
+        border: "1px solid rgba(255, 255, 255, 0.10)",
         borderRadius: "20px",
         padding: "28px 24px 22px",
         display: "flex", flexDirection: "column", gap: "24px",
-        boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1)",
+        boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1)",
       }}>
         {/* Step dots */}
         <div style={{ display: "flex", justifyContent: "center", gap: "6px" }}>
@@ -317,7 +317,7 @@ function Onboarding({ onFinish, lang, setLang }: {
               width: i === step ? "24px" : "6px",
               height: "6px",
               borderRadius: "99px",
-              background: i === step ? "#6366f1" : i < step ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.12)",
+              background: i === step ? "#ffffff" : i < step ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.12)",
               transition: "all 0.3s",
             }} />
           ))}
@@ -701,7 +701,7 @@ function App() {
             {history.length > 0 && (
               <span style={{
                 position: "absolute", top: "-4px", right: "-4px",
-                background: "#6366f1", borderRadius: "50%",
+                background: "#ffffff", borderRadius: "50%",
                 width: "14px", height: "14px",
                 fontSize: "8px", display: "flex", alignItems: "center", justifyContent: "center",
                 fontWeight: 700, lineHeight: 1,
@@ -727,13 +727,13 @@ function App() {
           <div style={{ display: "flex", gap: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.05)" }}>
             <button 
               onClick={() => setView("home")} 
-              style={{ flex: 1, padding: "8px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600, background: view === "home" ? "rgba(99, 102, 241, 0.15)" : "transparent", color: view === "home" ? "#a5b4fc" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }}
+              style={{ flex: 1, padding: "8px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600, background: view === "home" ? "rgba(255, 255, 255, 0.15)" : "transparent", color: view === "home" ? "#a5b4fc" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }}
             >
               {t.tab_download_web}
             </button>
             <button 
               onClick={() => setView("compress")} 
-              style={{ flex: 1, padding: "8px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600, background: view === "compress" ? "rgba(99, 102, 241, 0.15)" : "transparent", color: view === "compress" ? "#a5b4fc" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }}
+              style={{ flex: 1, padding: "8px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600, background: view === "compress" ? "rgba(255, 255, 255, 0.15)" : "transparent", color: view === "compress" ? "#a5b4fc" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }}
             >
               {t.tab_compress_local}
             </button>
@@ -888,7 +888,7 @@ function App() {
                             <button 
                               key={f.v} 
                               onClick={() => setCompressFormat(f.v)}
-                              style={{ flex: 1, padding: "6px", fontSize: "0.75rem", borderRadius: "6px", background: compressFormat === f.v ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressFormat === f.v ? "#6366f1" : "transparent"}`, color: compressFormat === f.v ? "#fff" : "rgba(255,255,255,0.6)" }}
+                              style={{ flex: 1, padding: "6px", fontSize: "0.75rem", borderRadius: "6px", background: compressFormat === f.v ? "rgba(255, 255, 255, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressFormat === f.v ? "#ffffff" : "transparent"}`, color: compressFormat === f.v ? "#fff" : "rgba(255,255,255,0.6)" }}
                             >
                               {f.l}
                             </button>
@@ -907,7 +907,7 @@ function App() {
                             <button 
                               key={q.v} 
                               onClick={() => setCompressQuality(q.v)}
-                              style={{ flex: 1, padding: "6px", fontSize: "0.75rem", borderRadius: "6px", background: compressQuality === q.v ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressQuality === q.v ? "#6366f1" : "transparent"}`, color: compressQuality === q.v ? "#fff" : "rgba(255,255,255,0.6)", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}
+                              style={{ flex: 1, padding: "6px", fontSize: "0.75rem", borderRadius: "6px", background: compressQuality === q.v ? "rgba(255, 255, 255, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressQuality === q.v ? "#ffffff" : "transparent"}`, color: compressQuality === q.v ? "#fff" : "rgba(255,255,255,0.6)", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}
                             >
                               <span style={{ fontWeight: 600 }}>{q.l}</span>
                               <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>{compressSizeMb > 0 ? `~${(compressSizeMb * (q.v === "23" ? 0.8 : q.v === "28" ? 0.5 : 0.25)).toFixed(1)}MB` : q.e}</span>
@@ -923,7 +923,7 @@ function App() {
                             <button 
                               key={r.v} 
                               onClick={() => setCompressResolution(r.v)}
-                              style={{ flex: "1 0 auto", padding: "6px 10px", fontSize: "0.75rem", borderRadius: "6px", background: compressResolution === r.v ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressResolution === r.v ? "#6366f1" : "transparent"}`, color: compressResolution === r.v ? "#fff" : "rgba(255,255,255,0.6)" }}
+                              style={{ flex: "1 0 auto", padding: "6px 10px", fontSize: "0.75rem", borderRadius: "6px", background: compressResolution === r.v ? "rgba(255, 255, 255, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressResolution === r.v ? "#ffffff" : "transparent"}`, color: compressResolution === r.v ? "#fff" : "rgba(255,255,255,0.6)" }}
                             >
                               {r.l}
                             </button>
@@ -975,7 +975,7 @@ function App() {
                   className="custom-scroll"
                 >
                   {logs.map((log, i) => (
-                    <div key={i} style={{ borderLeft: "2px solid rgba(139, 92, 246, 0.3)", paddingLeft: "8px" }}>
+                    <div key={i} style={{ borderLeft: "2px solid rgba(255, 255, 255, 0.3)", paddingLeft: "8px" }}>
                       {log}
                     </div>
                   ))}
@@ -1007,8 +1007,8 @@ function App() {
                   <button key={l} onClick={() => setLang(l)} style={{ 
                     padding: "2px 8px", 
                     fontSize: "0.7rem", 
-                    background: lang === l ? "rgba(99, 102, 241, 0.2)" : "transparent",
-                    borderColor: lang === l ? "#6366f1" : "rgba(255,255,255,0.1)"
+                    background: lang === l ? "rgba(255, 255, 255, 0.2)" : "transparent",
+                    borderColor: lang === l ? "#ffffff" : "rgba(255,255,255,0.1)"
                   }}>
                     {l.toUpperCase()}
                   </button>
@@ -1107,7 +1107,7 @@ function App() {
               className="custom-scroll"
             >
               {logs.map((log, i) => (
-                <div key={i} style={{ borderLeft: "2px solid rgba(139, 92, 246, 0.3)", paddingLeft: "8px" }}>
+                <div key={i} style={{ borderLeft: "2px solid rgba(255, 255, 255, 0.3)", paddingLeft: "8px" }}>
                   {log}
                 </div>
               ))}
@@ -1179,7 +1179,7 @@ function App() {
 
       <footer style={{ marginTop: "15px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
         <div style={{ fontSize: "0.72rem", display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ color: status.includes(t.error) ? "#f87171" : "#6366f1", opacity: 0.9 }}>●</span>
+          <span style={{ color: status.includes(t.error) ? "#f87171" : "#ffffff", opacity: 0.9 }}>●</span>
           <span style={{ opacity: 0.65, flex: 1 }}>{status}</span>
           {appVersion && (
             <span style={{ opacity: 0.2, fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "0.02em", fontSize: "0.65rem" }}>v{appVersion}</span>
@@ -1193,15 +1193,15 @@ function App() {
           background: "rgba(10, 10, 10, 0.8)",
           backdropFilter: "blur(20px)",
           borderRadius: "16px",
-          border: "1px solid rgba(139, 92, 246, 0.2)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
           display: "flex",
           flexDirection: "column",
           gap: "12px",
-          boxShadow: "0 10px 40px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+          boxShadow: "0 10px 40px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#e9d5ff", display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#a855f7", boxShadow: "0 0 12px #a855f7" }} />
+            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ffffff", boxShadow: "0 0 12px #ffffff" }} />
               Nova versão disponível!
             </span>
             <button
@@ -1223,8 +1223,8 @@ function App() {
                   style={{
                     display: "flex", alignItems: "center", gap: "6px",
                     fontSize: "0.75rem", padding: "8px 12px",
-                    background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(217, 70, 239, 0.15) 100%)",
-                    border: "1px solid rgba(217, 70, 239, 0.3)",
+                    background: "linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.15) 100%)",
+                    border: "1px solid rgba(255, 255, 255, 0.3)",
                     borderRadius: "10px", cursor: "pointer", color: "white", flex: 1, minWidth: "100px", justifyContent: "center"
                   }}
                   title={asset.ext}

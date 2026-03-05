@@ -4,10 +4,10 @@
 :root {
   --bg-core: #050505;
   --bg-surface: #0a0a0a;
-  --purple-900: #0f0a1f;
-  --purple-accent: #6d28d9;
-  --purple-light: #a78bfa;
-  --purple-mid: #8b5cf6;
+  --purple-900: #111111;
+  --purple-accent: #333333;
+  --purple-light: #ffffff;
+  --purple-mid: #ffffff;
   --pink:        #ec4899;
   --surface-1:   rgba(255, 255, 255, 0.04);
   --surface-2:   rgba(255, 255, 255, 0.02);
@@ -47,7 +47,7 @@ body {
 
 /* ── Base container w/ ambient glow ── */
 .glass {
-  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15) 0%, rgba(0, 0, 0, 0) 60%),
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0) 60%),
               linear-gradient(180deg, var(--bg-core) 0%, #000000 100%);
   border: none;
   border-radius: 0;
@@ -61,7 +61,7 @@ body {
 /* ── Typography ── */
 .gradient-text {
   font-family: 'Space Grotesk', system-ui, sans-serif;
-  background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #aaaaaa 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -85,8 +85,8 @@ button {
 }
 
 button:hover {
-  border-color: rgba(139, 92, 246, 0.3);
-  background-color: rgba(99, 102, 241, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 button:active {
@@ -95,13 +95,13 @@ button:active {
 
 button:focus,
 button:focus-visible {
-  outline: 2px solid rgba(99, 102, 241, 0.4);
+  outline: 2px solid rgba(255, 255, 255, 0.4);
   outline-offset: 1px;
 }
 
 /* ── Control buttons (window chrome) ── */
 .control-btn {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   width: 28px;
@@ -116,9 +116,9 @@ button:focus-visible {
 }
 
 .control-btn:hover {
-  background: rgba(99, 102, 241, 0.18);
-  color: #c4b5fd;
-  border-color: rgba(139, 92, 246, 0.25);
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
   transform: none;
 }
 
@@ -132,9 +132,9 @@ button:focus-visible {
 .spinner {
   width: 12px;
   height: 12px;
-  border: 2px solid rgba(196, 181, 253, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.25);
   border-radius: 50%;
-  border-top-color: #c4b5fd;
+  border-top-color: #ffffff;
   animation: spin 0.8s linear infinite;
 }
 
@@ -150,11 +150,11 @@ button:focus-visible {
   background: transparent;
 }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
 }
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.4);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* ── Input ── */
@@ -166,7 +166,7 @@ button:focus-visible {
 }
 
 .input-field {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 18px;
@@ -181,14 +181,14 @@ button:focus-visible {
 }
 
 .input-field:focus {
-  background: rgba(99, 102, 241, 0.09);
-  border-color: rgba(99, 102, 241, 0.45);
-  box-shadow: 0 0 18px rgba(99, 102, 241, 0.12);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
 }
 
 /* ── Download button ── */
 .download-btn {
-  background: linear-gradient(90deg, #8b5cf6 0%, #d946ef 100%);
+  background: linear-gradient(90deg, #ffffff 0%, #d946ef 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 14px;
@@ -201,12 +201,12 @@ button:focus-visible {
   justify-content: center;
   gap: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px -4px rgba(139, 92, 246, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 28px -4px rgba(255, 255, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .download-btn:active:not(:disabled) {
@@ -223,7 +223,7 @@ button:focus-visible {
 .progress-bar-track {
   width: 100%;
   height: 5px;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 99px;
   overflow: hidden;
 }
@@ -231,9 +231,9 @@ button:focus-visible {
 .progress-bar-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  background: linear-gradient(90deg, #fff, #aaa, #777);
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
 }
 
 .progress-bar-fill.indeterminate {
