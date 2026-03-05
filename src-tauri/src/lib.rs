@@ -520,6 +520,74 @@ async fn pick_video_file(app: tauri::AppHandle) -> Result<Option<PickedVideo>, S
     }
 }
 
+#[tauri::command]
+async fn download_and_open_installer(
+    app: tauri::AppHandle,
+    url: String,
+    ext: String,
+) -> Result<(), String> {
+    let _ = app.emit("download-log", format!("Iniciando download da atualização..."));
+    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
+    
+    let temp_dir = std::env::temp_dir();
+    let fname = format!("mevideo_update_{}.{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(), ext.trim_start_matches('.'));
+    let temp_file = temp_dir.join(&fname);
+    
+    let mut file = tokio::fs::File::create(&temp_file).await.map_err(|e| e.to_string())?;
+    
+    use futures_util::StreamExt;
+    use tokio::io::AsyncWriteExt;
+    let mut stream = response.bytes_stream();
+    while let Some(item) = stream.next().await {
+        let chunk = item.map_err(|e| e.to_string())?;
+        file.write_all(&chunk).await.map_err(|e| e.to_string())?;
+    }
+    
+    let _ = app.emit("download-log", format!("Abrindo instalador..."));
+    
+    #[cfg(target_os = "windows")]
+    {
+        let path_str = temp_file.to_string_lossy().to_string();
+        if ext.to_lowercase().ends_with("msi") {
+            std::process::Command::new("msiexec")
+                .arg("/i")
+                .arg(&path_str)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        } else {
+            std::process::Command::new("cmd")
+                .arg("/c")
+                .arg("start")
+                .arg("")
+                .arg(&path_str)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&temp_file)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        if ext.to_lowercase().contains("appimage") {
+            let _ = std::process::Command::new("chmod")
+                .arg("+x")
+                .arg(&temp_file)
+                .status();
+        }
+        std::process::Command::new("xdg-open")
+            .arg(&temp_file)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -590,7 +658,8 @@ pub fn run() {
             pick_folder,
             pick_video_file,
             compress_video,
-            open_path
+            open_path,
+            download_and_open_installer
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -416,7 +416,8 @@ function App() {
                 const parsedAssets: UpdateAsset[] = [];
                 for (const a of assets) {
                   const name = a.name.toLowerCase();
-                  if (name.endsWith('.exe')) parsedAssets.push({ os: 'windows', ext: '.exe', url: a.browser_download_url, size: a.size });
+                  if (name.endsWith('.msi')) parsedAssets.push({ os: 'windows', ext: '.msi', url: a.browser_download_url, size: a.size });
+                  else if (name.endsWith('.exe')) parsedAssets.push({ os: 'windows', ext: '.exe', url: a.browser_download_url, size: a.size });
                   else if (name.endsWith('.dmg')) parsedAssets.push({ os: 'mac', ext: '.dmg', url: a.browser_download_url, size: a.size });
                   else if (name.endsWith('.deb')) parsedAssets.push({ os: 'linux', ext: '.deb', url: a.browser_download_url, size: a.size });
                   else if (name.endsWith('.appimage')) parsedAssets.push({ os: 'linux', ext: 'AppImage', url: a.browser_download_url, size: a.size });
@@ -1218,7 +1219,7 @@ function App() {
               return (
                 <button
                   key={idx}
-                  onClick={() => { import("@tauri-apps/plugin-shell").then(({ open }) => open(asset.url)).catch(console.error); }}
+                  onClick={() => { invoke("download_and_open_installer", { url: asset.url, ext: asset.ext }).catch(console.error); }}
                   style={{
                     display: "flex", alignItems: "center", gap: "6px",
                     fontSize: "0.75rem", padding: "8px 12px",
