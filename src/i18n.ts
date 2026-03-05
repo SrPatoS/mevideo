@@ -35,7 +35,20 @@ export const i18n = {
     system: "SISTEMA",
     autostart: "Iniciar com o Sistema",
     enabled: "Ligado",
-    disabled: "Desligado"
+    disabled: "Desligado",
+    tab_download_web: "Baixar Vídeos",
+    tab_compress_local: "Comprimir Vídeos",
+    select_video_pc: "Selecionar vídeo no PC...",
+    format: "Formato",
+    target_quality: "Qualidade alvo",
+    quality_high: "Alta",
+    quality_medium: "Média",
+    quality_low: "Baixa",
+    resolution_height: "Resolução (Altura)",
+    res_original: "Original",
+    compress_video: "Comprimir Vídeo",
+    compression_logs: "Logs de Compressão",
+    history_tab: "Histórico"
   },
   en: {
     title: "Mevideo",
@@ -71,7 +84,20 @@ export const i18n = {
     system: "SYSTEM",
     autostart: "Start on Boot",
     enabled: "On",
-    disabled: "Off"
+    disabled: "Off",
+    tab_download_web: "Download Videos",
+    tab_compress_local: "Compress Videos",
+    select_video_pc: "Select video from PC...",
+    format: "Format",
+    target_quality: "Target quality",
+    quality_high: "High",
+    quality_medium: "Medium",
+    quality_low: "Low",
+    resolution_height: "Resolution (Height)",
+    res_original: "Original",
+    compress_video: "Compress Video",
+    compression_logs: "Compression Logs",
+    history_tab: "History"
   },
   es: {
     title: "Mevideo",
@@ -107,7 +133,20 @@ export const i18n = {
     system: "SISTEMA",
     autostart: "Iniciar con el Sistema",
     enabled: "Activado",
-    disabled: "Desactivado"
+    disabled: "Desactivado",
+    tab_download_web: "Descargar Videos",
+    tab_compress_local: "Comprimir Videos",
+    select_video_pc: "Seleccionar video en el PC...",
+    format: "Formato",
+    target_quality: "Calidad objetivo",
+    quality_high: "Alta",
+    quality_medium: "Media",
+    quality_low: "Baja",
+    resolution_height: "Resolución (Altura)",
+    res_original: "Original",
+    compress_video: "Comprimir Video",
+    compression_logs: "Registros de Compresión",
+    history_tab: "Historial"
   }
 };
 

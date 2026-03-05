@@ -364,13 +364,18 @@ function App() {
   const [status, setStatus] = useState<string>(t.ready);
   const [autoStart, setAutoStart] = useState<boolean>(false);
   const [logs, setLogs] = useState<string[]>(["Mevideo Initialized..."]);
-  const [view, setView] = useState<"home" | "config" | "history">("home");
+  const [view, setView] = useState<"home" | "config" | "history" | "compress">("home");
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoInfo, setVideoInfo] = useState<any>(null);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
   const [downloadPath, setDownloadPath] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [compressFile, setCompressFile] = useState<string | null>(null);
+  const [compressSizeMb, setCompressSizeMb] = useState<number>(0);
+  const [compressFormat, setCompressFormat] = useState<string>("mp4");
+  const [compressQuality, setCompressQuality] = useState<string>("28");
+  const [compressResolution, setCompressResolution] = useState<string>("original");
   const [appVersion, setAppVersion] = useState<string>("");
   const [showOnboarding, setShowOnboarding] = useState<boolean>(
     () => !localStorage.getItem("metool-onboarding-done")
@@ -427,18 +432,22 @@ function App() {
     const setupListener = async () => {
       try {
         const { listen } = await import("@tauri-apps/api/event");
-        const unlisten = await listen<string>("download-log", (event) => {
+        const unlistenDown = await listen<string>("download-log", (event) => {
           const payload = event.payload;
-          // Parse yt-dlp progress: "[download]  45.3% of 128.5MiB at 2.5MiB/s"
           const pct = payload.match(/\[download\]\s+(\d+(?:\.\d+)?)%/);
           if (pct) {
             setDownloadProgress(parseFloat(pct[1]));
           }
           setLogs(prev => [...prev.slice(-49), `[${new Date().toLocaleTimeString()}] ${payload}`]);
         });
-        return unlisten;
+        const unlistenComp = await listen<string>("compress-log", (event) => {
+          const payload = event.payload;
+          setLogs(prev => [...prev.slice(-49), `[${new Date().toLocaleTimeString()}] ${payload}`]);
+        });
+        return () => { unlistenDown(); unlistenComp(); };
       } catch (e) {
         console.error("Failed to setup log listener:", e);
+        return () => {};
       }
     };
 
@@ -625,6 +634,48 @@ function App() {
     }
   };
 
+  const handleCompressVideo = async () => {
+    if (!compressFile || !compressFormat) return;
+
+    const missingDeps = binaries.filter(b => !b.exists && b.name === "ffmpeg");
+    if (missingDeps.length > 0) {
+      setView("config");
+      setStatus(t.error);
+      return;
+    }
+
+    setIsLoading("compress");
+    setStatus(t.processing || "Processando...");
+    try {
+      const savedPath = await invoke<string>("compress_video", { 
+        inputPath: compressFile, 
+        formatExt: compressFormat,
+        qualityCrf: compressQuality,
+        resolution: compressResolution
+      });
+      setStatus(t.finished || "Concluído!");
+      setCompressFile(null);
+      invoke("open_path", { path: savedPath }).catch(console.error);
+    } catch (e) {
+      console.error(e);
+      setStatus(`${t.error}: ${e}`);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const selectCompressFile = async () => {
+    try {
+      const result = await invoke<{path: string, size_mb: number} | null>("pick_video_file");
+      if (result) {
+        setCompressFile(result.path);
+        setCompressSizeMb(result.size_mb);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <>
     <div className="glass">
@@ -632,11 +683,10 @@ function App() {
         <div onClick={() => setView("home")} style={{ cursor: "pointer" }}>
           <h1 className="gradient-text" style={{ fontSize: "1.8rem", margin: "0" }}>{t.title}</h1>
           <p style={{ opacity: 0.6, fontSize: "0.8rem" }}>
-            {view === "home" ? t.home_subtitle : view === "config" ? t.config_subtitle : "Histórico"}
+            {view === "home" ? t.home_subtitle : view === "config" ? t.config_subtitle : t.history_tab}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
-          {/* History button */}
           <button
             onClick={() => setView(view === "history" ? "home" : "history")}
             className="control-btn"
@@ -670,10 +720,28 @@ function App() {
         </div>
       </header>
 
-      {view === "home" ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px", paddingTop: "10px", overflowY: "auto" }} className="custom-scroll">
-          <div className="input-group">
-            <div style={{ display: "flex", gap: "8px" }}>
+      {view === "home" || view === "compress" ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", paddingTop: "0px", overflowY: "auto" }} className="custom-scroll">
+          
+          <div style={{ display: "flex", gap: "8px", padding: "4px", background: "rgba(255,255,255,0.03)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <button 
+              onClick={() => setView("home")} 
+              style={{ flex: 1, padding: "8px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600, background: view === "home" ? "rgba(99, 102, 241, 0.15)" : "transparent", color: view === "home" ? "#a5b4fc" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }}
+            >
+              {t.tab_download_web}
+            </button>
+            <button 
+              onClick={() => setView("compress")} 
+              style={{ flex: 1, padding: "8px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 600, background: view === "compress" ? "rgba(99, 102, 241, 0.15)" : "transparent", color: view === "compress" ? "#a5b4fc" : "rgba(255,255,255,0.4)", transition: "all 0.2s" }}
+            >
+              {t.tab_compress_local}
+            </button>
+          </div>
+
+          {view === "home" ? (
+            <>
+              <div className="input-group">
+                <div style={{ display: "flex", gap: "8px" }}>
               <input 
                 type="text" 
                 className="input-field" 
@@ -783,6 +851,138 @@ function App() {
               </p>
             </div>
           )}
+            </>
+          ) : null}
+
+          {view === "compress" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="input-group">
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <div 
+                    className="input-field" 
+                    style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", opacity: compressFile ? 1 : 0.5, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 12px" }}
+                    onClick={selectCompressFile}
+                  >
+                    {compressFile || t.select_video_pc}
+                  </div>
+                  <button 
+                    onClick={selectCompressFile} 
+                    style={{ borderRadius: "12px", padding: "0 15px", background: "rgba(255,255,255,0.05)", minWidth: "46px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <path d="M12 3v12"></path>
+                      <path d="M16 11l-4 4-4-4"></path>
+                    </svg>
+                  </button>
+                </div>
+                
+                {compressFile && (
+                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: "12px", padding: "15px", border: "1px solid rgba(255,255,255,0.05)", marginTop: "16px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={{ fontSize: "0.7rem", opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.format}</span>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          {[{v: "mp4", l: "MP4"}, {v: "webm", l: "WebM"}, {v: "mkv", l: "MKV"}].map(f => (
+                            <button 
+                              key={f.v} 
+                              onClick={() => setCompressFormat(f.v)}
+                              style={{ flex: 1, padding: "6px", fontSize: "0.75rem", borderRadius: "6px", background: compressFormat === f.v ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressFormat === f.v ? "#6366f1" : "transparent"}`, color: compressFormat === f.v ? "#fff" : "rgba(255,255,255,0.6)" }}
+                            >
+                              {f.l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={{ fontSize: "0.7rem", opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.target_quality}</span>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          {[
+                            {v: "23", l: t.quality_high, e: "~80% original"}, 
+                            {v: "28", l: t.quality_medium, e: "~50% original"}, 
+                            {v: "35", l: t.quality_low, e: "~30% original"}
+                          ].map(q => (
+                            <button 
+                              key={q.v} 
+                              onClick={() => setCompressQuality(q.v)}
+                              style={{ flex: 1, padding: "6px", fontSize: "0.75rem", borderRadius: "6px", background: compressQuality === q.v ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressQuality === q.v ? "#6366f1" : "transparent"}`, color: compressQuality === q.v ? "#fff" : "rgba(255,255,255,0.6)", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px" }}
+                            >
+                              <span style={{ fontWeight: 600 }}>{q.l}</span>
+                              <span style={{ fontSize: "0.6rem", opacity: 0.6 }}>{compressSizeMb > 0 ? `~${(compressSizeMb * (q.v === "23" ? 0.8 : q.v === "28" ? 0.5 : 0.25)).toFixed(1)}MB` : q.e}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={{ fontSize: "0.7rem", opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.resolution_height}</span>
+                        <div style={{ display: "flex", gap: "6px", overflowX: "auto" }} className="custom-scroll pb-1">
+                          {[{v: "original", l: t.res_original}, {v: "1080", l: "1080p"}, {v: "720", l: "720p"}, {v: "480", l: "480p"}].map(r => (
+                            <button 
+                              key={r.v} 
+                              onClick={() => setCompressResolution(r.v)}
+                              style={{ flex: "1 0 auto", padding: "6px 10px", fontSize: "0.75rem", borderRadius: "6px", background: compressResolution === r.v ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.05)", border: `1px solid ${compressResolution === r.v ? "#6366f1" : "transparent"}`, color: compressResolution === r.v ? "#fff" : "rgba(255,255,255,0.6)" }}
+                            >
+                              {r.l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <button 
+                        className="download-btn" 
+                        disabled={isLoading !== null}
+                        onClick={handleCompressVideo}
+                        style={{ marginTop: "10px" }}
+                      >
+                        {isLoading === "compress" ? <div className="spinner" /> : (
+                          <>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="2" y="2" width="20" height="20" rx="2" ry="2" />
+                              <line x1="12" y1="8" x2="12" y2="16" />
+                              <line x1="8" y1="12" x2="16" y2="12" />
+                            </svg>
+                            {t.compress_video}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+              </div>
+              
+              <section style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+                <h2 style={{ fontSize: "0.8rem", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.5 }}>{t.compression_logs}</h2>
+                <div 
+                  ref={scrollRef}
+                  style={{ 
+                    height: "140px",
+                    background: "rgba(6, 5, 8, 0.7)", 
+                    borderRadius: "8px", 
+                    padding: "12px", 
+                    fontFamily: "monospace", 
+                    fontSize: "0.75rem", 
+                    color: "rgba(235, 228, 255, 0.7)",
+                    overflowY: "auto",
+                    border: "1px solid var(--border-soft)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px"
+                  }}
+                  className="custom-scroll"
+                >
+                  {logs.map((log, i) => (
+                    <div key={i} style={{ borderLeft: "2px solid rgba(139, 92, 246, 0.3)", paddingLeft: "8px" }}>
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          ) : null}
+
         </div>
       ) : view === "config" ? (
         <div style={{ textAlign: "left", flex: 1, display: "flex", flexDirection: "column", gap: "15px", overflowY: "auto", paddingRight: "2px" }} className="custom-scroll">
@@ -913,7 +1113,7 @@ function App() {
             </div>
           </section>
         </div>
-      ) : (
+      ) : view === "history" ? (
         // History view
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto" }} className="custom-scroll">
           {history.length === 0 ? (
@@ -974,7 +1174,7 @@ function App() {
             </>
           )}
         </div>
-      )}
+      ) : null}
 
       <footer style={{ marginTop: "15px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
         <div style={{ fontSize: "0.72rem", display: "flex", alignItems: "center", gap: "8px" }}>

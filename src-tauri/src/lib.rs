@@ -406,6 +406,120 @@ fn open_path(path: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+async fn compress_video(
+    app: tauri::AppHandle,
+    input_path: String,
+    format_ext: String,
+    quality_crf: String,
+    resolution: String,
+) -> Result<String, String> {
+    let bin_dir = binaries::get_bin_dir();
+    let ffmpeg_path = if cfg!(target_os = "windows") {
+        bin_dir.join("ffmpeg.exe")
+    } else {
+        bin_dir.join("ffmpeg")
+    };
+
+    if !ffmpeg_path.exists() {
+        return Err("ffmpeg not installed".to_string());
+    }
+
+    let dest_dir = app
+        .path()
+        .resolve("", tauri::path::BaseDirectory::Download)
+        .map_err(|e| e.to_string())?;
+
+    let input_path_buf = std::path::PathBuf::from(&input_path);
+    let original_name = input_path_buf
+        .file_stem()
+        .unwrap_or_default()
+        .to_string_lossy();
+    
+    let dest_path = dest_dir.join(format!("{}_compressed.{}", original_name, format_ext));
+
+    let _ = app.emit(
+        "compress-log",
+        format!(
+            "Comprimindo para {}...",
+            format_ext.to_uppercase()
+        ),
+    );
+
+    let mut cmd = std::process::Command::new(&ffmpeg_path);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let vcodec = if format_ext == "webm" { "libvpx-vp9" } else { "libx264" };
+    
+    cmd.arg("-y") // Overwrite output files
+       .arg("-i")
+       .arg(&input_path);
+       
+    if resolution != "original" {
+        // scale height to resolution, proportional width
+        cmd.arg("-vf").arg(format!("scale=-2:{}", resolution));
+    }
+
+    cmd.arg("-c:v")
+       .arg(vcodec)
+       .arg("-crf")
+       .arg(&quality_crf) // Use selected quality
+       .arg("-preset")
+       .arg("fast")
+       .arg(&dest_path)
+       .stdout(std::process::Stdio::piped())
+       .stderr(std::process::Stdio::piped());
+
+    let mut child = cmd.spawn().map_err(|e| e.to_string())?;
+    let stderr = child.stderr.take().unwrap();
+    let reader = std::io::BufReader::new(stderr);
+
+    use std::io::BufRead;
+    for line in reader.lines() {
+        if let Ok(l) = line {
+            // ffmpeg outputs progress to stderr
+            let _ = app.emit("compress-log", l);
+        }
+    }
+
+    let status = child.wait().map_err(|e| e.to_string())?;
+    if status.success() {
+        let _ = app.emit("compress-log", "✅ Compressão concluída!".to_string());
+        Ok(dest_path.to_string_lossy().to_string())
+    } else {
+        Err("Processo do ffmpeg falhou".to_string())
+    }
+}
+
+#[derive(serde::Serialize)]
+struct PickedVideo {
+    path: String,
+    size_mb: f64,
+}
+
+#[tauri::command]
+async fn pick_video_file(app: tauri::AppHandle) -> Result<Option<PickedVideo>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog().file().add_filter("Video", &["mp4", "mkv", "avi", "mov", "webm", "flv"]).pick_file(move |file| {
+        let _ = tx.send(file);
+    });
+    let file = rx.await.map_err(|e| e.to_string())?;
+    
+    if let Some(f) = file {
+        let path = f.to_string();
+        let size_bytes = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+        let size_mb = size_bytes as f64 / 1024.0 / 1024.0;
+        Ok(Some(PickedVideo { path, size_mb }))
+    } else {
+        Ok(None)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -474,6 +588,8 @@ pub fn run() {
             download_video,
             get_video_info,
             pick_folder,
+            pick_video_file,
+            compress_video,
             open_path
         ])
         .run(tauri::generate_context!())
